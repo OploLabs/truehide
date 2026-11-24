@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#101216" />
+    <meta
+      name="description"
+      content="TrueCrop — precision image cropping, processed privately in your browser."
+    />
+
+    <title>TrueCrop — TrueHide</title>
+
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="../../manifest.json" />
+
+    <script defer src="script.js"></script>
+  </head>
+
+  <body>
+    <header class="app-header">
+      <nav class="island" id="island">
+        <a href="../../index.html" class="brand">
+          <span class="brand-icon">T</span>
+          <span>TrueHide</span>
+        </a>
+
+        <div class="island-menu">
+          <a href="../../index.html">Home</a>
+          <a href="../trueflatten/index.html">TrueFlatten</a>
+          <a href="../trueblur/index.html">TrueBlur</a>
+          <a href="../truecrop/index.html" class="active">TrueCrop</a>
+        </div>
+
+        <button
+          class="theme-toggle"
+          id="themeToggle"
+          aria-label="Toggle theme"
+          title="Toggle theme"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+          >
+            <circle cx="12" cy="12" r="4"></circle>
+            <path
+              d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"
+            ></path>
+          </svg>
+        </button>
+      </nav>
+    </header>
+
+    <main class="app">
+      <section class="intro">
+        <div class="eyebrow">
+          <span></span>
+          IMAGE PRIVACY TOOL
+        </div>
+
+        <h1>True<span>Crop</span></h1>
+
+        <p>Precision cropping. Nothing extra. Just the pixels you want.</p>
+      </section>
+
+      <section class="workspace">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <label class="button primary" for="imageInput">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
+                <path d="M12 16V4m-5 5 5-5 5 5"></path>
+                <path d="M4 16v4h16v-4"></path>
+              </svg>
+              Open image
+            </label>
+
+            <input id="imageInput" type="file" accept="image/*" hidden />
+            <span class="toolbar-hint"
+              >or drag an image into the workspace</span
+            >
+          </div>
+
+          <div class="toolbar-right">
+            <div class="format-control">
+              <label for="format">FORMAT</label>
+              <select id="format">
+                <option value="image/png">PNG</option>
+                <option value="image/jpeg">JPEG</option>
+                <option value="image/webp">WebP</option>
+              </select>
+            </div>
+
+            <button
+              class="button icon-button"
+              id="resetButton"
+              disabled
+              title="Reset selection"
+              aria-label="Reset"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="canvas-area" id="canvasArea">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">
+              <svg
+                viewBox="0 0 48 48"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="5" y="7" width="38" height="34" rx="6"></rect>
+                <circle cx="16" cy="18" r="3"></circle>
+                <path d="m6 33 11-10 9 8 6-6 11 10"></path>
+              </svg>
+            </div>
+
+            <h2>Your canvas is empty</h2>
+            <p>Choose an image to start cropping.</p>
+
+            <label class="button primary upload-button" for="imageInput">
+              Choose image
+            </label>
+
+            <span class="empty-hint"
+              >PNG, JPG, WebP and other supported formats</span
+            >
+          </div>
+
+          <div class="stage hidden" id="stage">
+            <canvas id="imageCanvas"></canvas>
+            <canvas id="selectionCanvas"></canvas>
+          </div>
+        </div>
+
+        <div class="selection-info">
+          <div class="info-group">
+            <span class="info-label">SELECTION</span>
+            <strong id="dimensions">No selection</strong>
+          </div>
+
+          <div class="info-divider"></div>
+
+          <div class="info-group">
+            <span class="info-label">OUTPUT SIZE</span>
+            <strong id="outputDimensions">—</strong>
+          </div>
+
+          <div class="info-divider"></div>
+
+          <div class="info-group">
+            <span class="info-label">SOURCE</span>
+            <strong id="sourceDimensions">—</strong>
+          </div>
+        </div>
+
+        <div class="bottom-toolbar">
+          <div class="tool-instructions">
+            <span class="instruction-dot"></span>
+            <span id="instructionText"
+              >Drag to create a selection. Move or resize it afterward.</span
+            >
+          </div>
+
+          <div class="actions">
+            <button class="button" id="clearButton" disabled>
+              Clear selection
+            </button>
+
+            <button class="button primary crop-button" id="cropButton" disabled>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 3v12m-5-5 5 5 5-5"></path>
+                <path d="M5 17v4h14v-4"></path>
+              </svg>
+              Crop &amp; Download
+            </button>
+          </div>
+        </div>
+
+        <div class="notice">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="4" y="10" width="16" height="11" rx="2"></rect>
+            <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+          </svg>
+
+          <span>
+            <strong>Private by design.</strong>
+            Images are processed locally in your browser. Nothing is uploaded.
+          </span>
+        </div>
+      </section>
+    </main>
+
+    <div class="drop-overlay" id="dropOverlay">
+      <div class="drop-card">
+        <div class="drop-icon">
+          <svg
+            viewBox="0 0 48 48"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path d="M24 32V8m-9 9 9-9 9 9"></path>
+            <path d="M8 30v10h32V30"></path>
+          </svg>
+        </div>
+        <strong>Drop your image</strong>
+        <p>Release to open it in TrueCrop.</p>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <footer>
+      <span>TrueHide</span>
+      <span>Processed locally in your browser</span>
+    </footer>
+
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("../../sw.js").catch(console.error);
+      }
+    </script>
+  </body>
+</html>
