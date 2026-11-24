@@ -4,11 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-      <meta name="description" content="TrueFlatten — permanently redact PDFs by flattening pages into images. All processing happens locally in your browser." />
+    <meta
+      name="description"
+      content="TrueFlatten — permanently redact PDFs by flattening pages into images. All processing happens locally in your browser."
+    />
 
     <title>TrueFlatten — TrueHide</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="manifest" href="../../manifest.json" />
+    <link rel="icon" href="../../icons/icon-192.svg" type="image/svg+xml">
+    <link rel="icon" sizes="32x32" href="../../icons/icon-192.svg">
+    <link rel="apple-touch-icon" href="../../icons/icon-192.svg">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script defer src="script.js"></script>
@@ -16,19 +22,24 @@
   <body>
     <header class="app-header">
       <nav class="island" id="island">
-        <a href="../../index.html" class="brand">
+        <a href="../../" class="brand">
           <span class="brand-icon">T</span>
           <span>TrueHide</span>
         </a>
 
         <div class="island-menu">
-          <a href="../../index.html">Home</a>
-          <a href="../trueflatten/index.html" class="active">TrueFlatten</a>
-          <a href="../trueblur/index.html">TrueBlur</a>
-          <a href="../truecrop/index.html">TrueCrop</a>
+          <a href="../../">Home</a>
+          <a href="../trueflatten/" class="active">TrueFlatten</a>
+          <a href="../trueblur/">TrueBlur</a>
+          <a href="../truecrop/">TrueCrop</a>
         </div>
 
-        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" type="button">
+        <button
+          class="theme-toggle"
+          id="themeToggle"
+          aria-label="Toggle theme"
+          type="button"
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="12" cy="12" r="4"></circle>
             <path
@@ -91,8 +102,8 @@
         <div class="bottom-toolbar">
           <div class="tool-instructions">
             <span class="instruction-dot"></span>
-            Drag over content to redact. Drag redactions to move them, click
-            one to delete it.
+            Drag over content to redact. Drag redactions to move them, click one
+            to delete it.
           </div>
           <button class="button danger" id="flattenButton" disabled>
             Flatten & Download
@@ -123,8 +134,8 @@
 
     <script>
       if ("serviceWorker" in navigator) {
-        navigator
-          .serviceWorker.register("../../sw.js")
+        navigator.serviceWorker
+          .register("../../sw.js")
           .catch((error) =>
             console.log("Service Worker registration failed:", error),
           );
