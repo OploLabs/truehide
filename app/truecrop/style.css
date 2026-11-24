@@ -202,8 +202,7 @@ svg {
 
   border-radius: 50%;
 
-  color: white;
-  background: linear-gradient(145deg, #91b3ff, #4776eb);
+  background: url("../../icons/icon-192.svg") center/contain no-repeat;
 
   box-shadow:
     0 4px 12px rgba(80, 125, 235, 0.3),

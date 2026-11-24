@@ -113,8 +113,7 @@ button {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  color: white;
-  background: linear-gradient(135deg, #80a9ff, #5078ed);
+  background: url("../../icons/icon-192.svg") center/contain no-repeat;
 }
 
 .island-menu {
