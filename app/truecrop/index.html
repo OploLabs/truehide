@@ -258,11 +258,10 @@
 
     <script>
       if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-          .register("../../sw.js", {
-            scope: "../../",
-          })
-          .catch(console.error);
+        navigator.serviceWorker;
+        navigator.serviceWorker.register("../../sw.js", {
+          scope: "../../",
+        });
       }
     </script>
   </body>

@@ -97,7 +97,7 @@ a {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: url("../icons/icon-192.svg") center/contain no-repeat;
+  background: url("./icons/icon-192.svg") center/contain no-repeat;
 }
 
 .island-menu {
@@ -496,7 +496,9 @@ footer strong {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
