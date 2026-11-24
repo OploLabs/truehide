@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#101216" />
+
+    <title>TrueBlur — TrueHide</title>
+
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="../../manifest.json" />
+
+    <script defer src="script.js"></script>
+  </head>
+
+  <body>
+    <header class="app-header">
+      <nav class="island" id="island">
+        <a href="../../index.html" class="brand">
+          <span class="brand-icon">T</span>
+          <span>TrueHide</span>
+        </a>
+
+        <div class="island-menu">
+          <a href="../../index.html">Home</a>
+          <a href="../trueflatten/index.html">TrueFlatten</a>
+          <a href="../trueblur/index.html" class="active">TrueBlur</a>
+          <a href="../truecrop/index.html">TrueCrop</a>
+        </div>
+
+        <button
+          class="theme-toggle"
+          id="themeToggle"
+          aria-label="Toggle theme"
+          type="button"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path
+              d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"
+            />
+          </svg>
+        </button>
+      </nav>
+    </header>
+
+    <main class="app">
+      <section class="intro">
+        <div class="eyebrow">
+          <span></span>
+          IMAGE PRIVACY TOOL
+        </div>
+
+        <h1>True<span>Blur</span></h1>
+
+        <p>Obscure, pixelate, and redact sensitive areas of your images.</p>
+      </section>
+
+      <section class="workspace">
+        <div class="toolbar">
+          <label class="button primary" for="imageInput">
+            <span>＋</span> Open image
+          </label>
+
+          <input id="imageInput" type="file" accept="image/*" />
+
+          <div class="toolbar-spacer"></div>
+
+          <button class="button" id="undoButton" disabled type="button">
+            ↶ Undo
+          </button>
+
+          <button class="button" id="resetButton" disabled type="button">
+            Reset
+          </button>
+        </div>
+
+        <div class="canvas-area">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">▧</div>
+
+            <h2>Choose an image</h2>
+
+            <p>Drop an image here or select one from your device.</p>
+
+            <label class="button primary" for="imageInput">
+              Choose image
+            </label>
+          </div>
+
+          <div class="stage hidden" id="stage">
+            <canvas id="imageCanvas"></canvas>
+            <canvas id="selectionCanvas"></canvas>
+          </div>
+        </div>
+
+        <div class="selection-info">
+          <div>
+            <span class="info-label">Selection</span>
+            <strong id="dimensions">No selection</strong>
+          </div>
+
+          <div>
+            <span class="info-label">Image dimensions</span>
+            <strong id="imageDimensions">—</strong>
+          </div>
+
+          <div>
+            <span class="info-label">Status</span>
+            <strong id="status">Waiting for image</strong>
+          </div>
+        </div>
+
+        <div class="settings">
+          <div class="settings-heading">
+            <div>
+              <h2>Effect settings</h2>
+              <p>Configure how selected regions are processed.</p>
+            </div>
+          </div>
+
+          <!-- MAIN MODE -->
+          <div class="setting">
+            <div class="setting-heading">
+              <label for="effect">Mode</label>
+            </div>
+
+            <select id="effect">
+              <option value="pixelate">Pixelate</option>
+              <option value="blocks">Randomized blocks</option>
+              <option value="solid">Solid black redaction</option>
+              <option value="paint">Paint / Brush</option>
+            </select>
+
+            <p>Select a rectangular area or paint an irregular area.</p>
+          </div>
+
+          <!-- PAINT SETTINGS -->
+          <div class="setting hidden" id="paintSettings">
+            <div class="setting-heading">
+              <label for="paintEffect">Paint effect</label>
+            </div>
+
+            <select id="paintEffect">
+              <option value="pixelate">Pixelate</option>
+              <option value="blocks">Randomized blocks</option>
+              <option value="solid">Solid black redaction</option>
+            </select>
+
+            <p>Choose what happens to the area you paint.</p>
+          </div>
+
+          <!-- BRUSH SIZE -->
+          <div class="setting hidden" id="brushSetting">
+            <div class="setting-heading">
+              <label for="brushSize">Brush size</label>
+              <span id="brushValue">32 px</span>
+            </div>
+
+            <input id="brushSize" type="range" min="4" max="200" value="32" />
+
+            <p>Controls the width of your brush.</p>
+          </div>
+
+          <!-- BLOCK SIZE -->
+          <div class="setting" id="blockSetting">
+            <div class="setting-heading">
+              <label for="blockSize">Block size</label>
+              <span id="blockValue">18 px</span>
+            </div>
+
+            <input id="blockSize" type="range" min="4" max="100" value="18" />
+
+            <p>Controls the size of individual processed regions.</p>
+          </div>
+
+          <!-- VARIATION -->
+          <div class="setting" id="variationSetting">
+            <div class="setting-heading">
+              <label for="variation">Random variation</label>
+              <span id="variationValue">50%</span>
+            </div>
+
+            <input id="variation" type="range" min="0" max="100" value="50" />
+
+            <p>Changes block dimensions for a more irregular appearance.</p>
+          </div>
+        </div>
+
+        <div class="bottom-toolbar">
+          <div class="tool-instructions">
+            <span class="instruction-dot"></span>
+            <span id="instructions">
+              Drag to select. Drag inside to move. Drag handles to resize.
+            </span>
+          </div>
+
+          <div class="actions">
+            <button class="button" id="clearSelection" disabled type="button">
+              Clear selection
+            </button>
+
+            <button class="button" id="applyButton" disabled type="button">
+              Apply effect
+            </button>
+
+            <button
+              class="button primary"
+              id="downloadButton"
+              disabled
+              type="button"
+            >
+              Download PNG
+            </button>
+          </div>
+        </div>
+
+        <div class="notice">
+          <strong>Privacy note:</strong>
+          Pixelation and randomized blocks are visual obfuscation, not
+          guaranteed irreversible redaction. Use solid black redaction for
+          sensitive information. All processing happens locally in your browser.
+        </div>
+      </section>
+    </main>
+
+    <div class="drop-overlay" id="dropOverlay">
+      <div class="drop-card">
+        <span>🖼️</span>
+        <strong>Drop an image here</strong>
+        <p>Processed locally in your browser.</p>
+      </div>
+    </div>
+
+    <footer>
+      <span>TrueHide</span>
+      <span>Processed locally in your browser</span>
+    </footer>
+
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("../../sw.js").catch(console.error);
+      }
+    </script>
+  </body>
+</html>
