@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>TrueFlatten — TrueHide</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="../../manifest.json" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script defer src="script.js"></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <nav class="island" id="island">
+        <a href="../../index.html" class="brand">
+          <span class="brand-icon">T</span>
+          <span>TrueHide</span>
+        </a>
+
+        <div class="island-menu">
+          <a href="../../index.html">Home</a>
+          <a href="../trueflatten/index.html" class="active">TrueFlatten</a>
+          <a href="../trueblur/index.html">TrueBlur</a>
+          <a href="../truecrop/index.html">TrueCrop</a>
+        </div>
+
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path
+              d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"
+            ></path>
+          </svg>
+        </button>
+      </nav>
+    </header>
+
+    <main class="app">
+      <section class="intro">
+        <div class="eyebrow"><span></span> PDF PRIVACY TOOL</div>
+        <h1>True<span>Flatten</span></h1>
+        <p>
+          Make PDF redactions permanent by converting pages into flattened
+          images.
+        </p>
+      </section>
+
+      <section class="workspace">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <label class="button primary" for="pdfInput">
+              <span>＋</span> Open PDF
+            </label>
+            <input type="file" id="pdfInput" accept="application/pdf,.pdf" />
+            <button class="button" id="clearPage" disabled>Clear page</button>
+          </div>
+
+          <div class="toolbar-right">
+            <button class="button" id="previousPage" disabled>←</button>
+            <span class="page-count" id="pageCount">Page — / —</span>
+            <button class="button" id="nextPage" disabled>→</button>
+          </div>
+        </div>
+
+        <div class="document-area" id="documentArea">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor">
+                <path d="M12 5h16l9 9v29H12z"></path>
+                <path d="M28 5v10h9M18 25h13M18 32h13"></path>
+              </svg>
+            </div>
+            <h2>Open a PDF to get started</h2>
+            <p>Your document stays in your browser.</p>
+            <label class="button primary" for="pdfInput">Choose PDF</label>
+          </div>
+
+          <div class="pdf-viewer hidden" id="pdfViewer">
+            <div class="page-wrapper" id="pageWrapper">
+              <canvas id="pdfCanvas"></canvas>
+              <div id="redactionLayer"></div>
+              <div id="selectionPreview"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-toolbar">
+          <div class="tool-instructions">
+            <span class="instruction-dot"></span>
+            Drag over content to redact. Drag redactions to move them, click
+            one to delete it.
+          </div>
+          <button class="button danger" id="flattenButton" disabled>
+            Flatten & Download
+          </button>
+        </div>
+
+        <div class="notice">
+          <strong>Important:</strong> Flattening converts each page into an
+          image. The resulting PDF will no longer contain the original
+          selectable text. Always inspect the downloaded document before sharing
+          it.
+        </div>
+      </section>
+    </main>
+
+    <div class="drop-overlay" id="dropOverlay">
+      <div class="drop-card">
+        <span>📄</span>
+        <strong>Drop a PDF here</strong>
+        <p>Flatten and redact locally in your browser.</p>
+      </div>
+    </div>
+
+    <footer>
+      <span>TrueHide</span>
+      <span>Processed locally in your browser</span>
+    </footer>
+
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator
+          .serviceWorker.register("../../sw.js")
+          .catch((error) =>
+            console.log("Service Worker registration failed:", error),
+          );
+      }
+    </script>
+  </body>
+</html>
