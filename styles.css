@@ -8,6 +8,7 @@
   --text: #17191f;
   --muted: #777e8b;
   --border: rgba(20, 25, 35, 0.09);
+  --line: rgba(20, 25, 35, 0.12);
   --accent: #5988f5;
   --accent-hover: #4775df;
   --shadow: 0 20px 60px rgba(30, 40, 60, 0.07);
@@ -21,6 +22,7 @@
   --text: #f3f4f7;
   --muted: #9ba1ae;
   --border: rgba(255, 255, 255, 0.09);
+  --line: rgba(255, 255, 255, 0.12);
   --accent: #79a0ff;
   --accent-hover: #91b1ff;
   --shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
@@ -95,8 +97,7 @@ a {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  color: white;
-  background: linear-gradient(135deg, #80a9ff, #5078ed);
+  background: url("../icons/icon-192.svg") center/contain no-repeat;
 }
 
 .island-menu {
@@ -128,7 +129,9 @@ a {
     color 0.2s;
 }
 
-.island-menu a:hover {
+.island-menu a:hover,
+.island-menu a.active,
+.island-menu a:focus-visible {
   color: var(--text);
   background: rgba(120, 140, 180, 0.13);
 }
@@ -148,6 +151,11 @@ a {
 
 .theme-toggle:hover {
   background: rgba(120, 140, 180, 0.15);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .theme-toggle svg {
@@ -484,5 +492,13 @@ footer strong {
   }
   footer {
     flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

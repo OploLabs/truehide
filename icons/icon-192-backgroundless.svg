@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+  </defs>
+
+  <rect width="192" height="192" rx="43" fill="url(#bg)"/>
+
+  <circle cx="96" cy="88" r="55" fill="#3978ed" opacity=".12" filter="url(#shadow)"/>
+
+  <path
+    d="M96 29 151 51v40c0 35-22 59-55 74C63 150 41 126 41 91V51z"
+    fill="url(#blue)"
+  />
+
+  <path
+    d="M96 43 138 60v31c0 27-16 47-42 61-26-14-42-34-42-61V60z"
+    fill="#17243a"
+    opacity=".92"
+  />
+
+  <path
+    d="M62 83h68M62 96h68M62 109h68"
+    stroke="#8bb8ff"
+    stroke-width="7"
+    stroke-linecap="round"
+    opacity=".35"
+  />
+
+  <path
+    d="M72 83h48M82 96h28M72 109h48"
+    stroke="#ffffff"
+    stroke-width="7"
+    stroke-linecap="round"
+  />
+
+  <circle cx="96" cy="96" r="6" fill="#8bb8ff"/>
+</svg>

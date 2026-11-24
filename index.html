@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f5f5f7" />
+    <meta
+      name="description"
+      content="TrueHide — free, private tools for flattening PDFs, blurring/redacting images, and cropping photos. All processing happens locally in your browser."
+    />
+    <link
+      rel="icon"
+      href="icons/icon-192-backgroundless.svg"
+      type="image/svg+xml"
+    />
+    <link rel="icon" sizes="32x32" href="icons/icon-192-backgroundless.svg" />
+    <link rel="apple-touch-icon" href="icons/icon-192-backgroundless.svg" />
     <link rel="manifest" href="/manifest.json" />
     <title>TrueHide — Privacy tools</title>
     <link rel="stylesheet" href="styles.css" />
@@ -13,7 +24,7 @@
     <header class="app-header">
       <nav class="island" id="island">
         <a href="./index.html" class="brand">
-          <span class="brand-icon">T</span>
+          <span class="brand-icon"></span>
           <span>TrueHide</span>
         </a>
 
@@ -38,7 +49,10 @@
 
     <main>
       <section class="hero">
-        <div class="eyebrow"><span></span> PRIVATE BY DESIGN</div>
+        <div class="eyebrow">
+          <span></span>
+          PRIVATE BY DESIGN
+        </div>
         <h1>Your files.<br /><span>Your privacy.</span></h1>
         <p>
           Simple, powerful tools to permanently transform your documents and
@@ -124,8 +138,8 @@
 
     <script>
       if ("serviceWorker" in navigator) {
-        navigator
-          .serviceWorker.register("/sw.js")
+        navigator.serviceWorker
+          .register("/sw.js")
           .catch((error) =>
             console.log("Service Worker registration failed:", error),
           );

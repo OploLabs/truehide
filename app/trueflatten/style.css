@@ -148,7 +148,8 @@ button {
 }
 
 .island-menu a:hover,
-.island-menu a.active {
+.island-menu a.active,
+.island-menu a:focus-visible {
   color: var(--text);
   background: rgba(120, 140, 180, 0.13);
 }
@@ -163,6 +164,11 @@ button {
   border-radius: 50%;
   background: transparent;
   cursor: pointer;
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .theme-toggle:hover {
@@ -556,5 +562,13 @@ footer {
   .island-menu a {
     padding: 8px 6px;
     font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
