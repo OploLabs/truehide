@@ -1,6 +1,4 @@
-# TrueHide
-
-[![Privacy-first tools for documents and images.](https://img.shields.io/badge/Privacy-first%20tools-🛡️-green)](https://github.com/shawn/truehide)
+# TrueHide [![Privacy-first tools for documents and images.](https://img.shields.io/badge/Privacy-first%20tools-%F0%9F%9B%A1%EF%B8%8F?color=green)](https://github.com/shawn/truehide)
 
 Privacy-first tools for documents and images. Everything runs locally in your browser — no uploads, no accounts, no tracking.
 
@@ -8,11 +6,11 @@ Privacy-first tools for documents and images. Everything runs locally in your br
 
 ## Tools
 
-| Tool | What it does | Best for |
-|------|-------------|----------|
-| [TrueFlatten](./app/trueflatten/) | Flatten PDFs and permanently burn redactions into every page by rasterizing. | Documents that must not allow text extraction after redaction. |
-| [TrueBlur](./app/trueblur/) | Destructively transform selected image areas with randomized processing (pixelate, blocks, solid redaction, paint). | Obscuring faces, license plates, and sensitive visual details. |
-| [TrueCrop](./app/truecrop/) | Crop exactly what you select and download the result in PNG, JPEG, or WebP. | Removing extra context from images before sharing. |
+| Tool                              | What it does                                                                                                        | Best for                                                       |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| [TrueFlatten](./app/trueflatten/) | Flatten PDFs and permanently burn redactions into every page by rasterizing.                                        | Documents that must not allow text extraction after redaction. |
+| [TrueBlur](./app/trueblur/)       | Destructively transform selected image areas with randomized processing (pixelate, blocks, solid redaction, paint). | Obscuring faces, license plates, and sensitive visual details. |
+| [TrueCrop](./app/truecrop/)       | Crop exactly what you select and download the result in PNG, JPEG, or WebP.                                         | Removing extra context from images before sharing.             |
 
 ---
 
@@ -62,7 +60,7 @@ A CI workflow deploys the full site automatically on push to `main`:
 
 ## Privacy notes
 
-TrueBlur's *Pixelate* and *Blocks* modes are visual obfuscation — they don't guarantee irreversible redaction on their own. For sensitive information, use **Solid black redaction** instead. TrueFlatten converts pages to images before flattening, which is the most reliable way to remove metadata and selectable text.
+TrueBlur's _Pixelate_ and _Blocks_ modes are visual obfuscation — they don't guarantee irreversible redaction on their own. For sensitive information, use **Solid black redaction** instead. TrueFlatten converts pages to images before flattening, which is the most reliable way to remove metadata and selectable text.
 
 Always inspect your downloaded output before sharing.
 
