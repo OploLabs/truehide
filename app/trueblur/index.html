@@ -14,9 +14,9 @@
 
     <link rel="stylesheet" href="style.css" />
     <link rel="manifest" href="../../manifest.json" />
-    <link rel="icon" href="../../icons/icon-192.svg" type="image/svg+xml">
-    <link rel="icon" sizes="32x32" href="../../icons/icon-192.svg">
-    <link rel="apple-touch-icon" href="../../icons/icon-192.svg">
+    <link rel="icon" href="../../icons/icon-192.svg" type="image/svg+xml" />
+    <link rel="icon" sizes="32x32" href="../../icons/icon-192.svg" />
+    <link rel="apple-touch-icon" href="../../icons/icon-192.svg" />
 
     <script defer src="script.js"></script>
   </head>
@@ -247,7 +247,11 @@
 
     <script>
       if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("../../sw.js").catch(console.error);
+        navigator.serviceWorker
+          .register("../../sw.js", {
+            scope: "../../",
+          })
+          .catch(console.error);
       }
     </script>
   </body>
