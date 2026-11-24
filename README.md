@@ -1,6 +1,6 @@
 # TrueHide
 
-[![Privacy-first tools for documents and images.](https://img.shields.io/badge/Privacy-first%20tools-🛡️-green)](https://github.com/shawn/truhide)
+[![Privacy-first tools for documents and images.](https://img.shields.io/badge/Privacy-first%20tools-🛡️-green)](https://github.com/shawn/truehide)
 
 Privacy-first tools for documents and images. Everything runs locally in your browser — no uploads, no accounts, no tracking.
 
