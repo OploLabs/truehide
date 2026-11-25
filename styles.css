@@ -113,7 +113,10 @@ a {
   white-space: nowrap;
 }
 
-.island:hover .island-menu {
+.island:hover .island-menu,
+.island:hover .island-menu *,
+.island:focus-within .island-menu,
+.island:focus-within .island-menu * {
   max-width: 460px;
   opacity: 1;
 }

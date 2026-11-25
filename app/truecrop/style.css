@@ -229,7 +229,9 @@ svg {
 }
 
 .island:hover .island-menu,
-.island:focus-within .island-menu {
+.island:hover .island-menu *,
+.island:focus-within .island-menu,
+.island:focus-within .island-menu * {
   max-width: 470px;
   opacity: 1;
 }
