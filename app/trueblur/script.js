@@ -892,6 +892,148 @@ function processImage() {
     return;
   }
 
+  if (effect === "falsepixel") {
+    const pixelSize = Math.max(2, Number($("falsepixelPixelSize").value) || 12);
+    const gradientSections = Math.max(
+      1,
+      Number($("falsepixelGradientSections").value) || 10,
+    );
+
+    const imageData = imageContext.getImageData(
+      0,
+      0,
+      imageCanvas.width,
+      imageCanvas.height,
+    );
+
+    const pixels = imageData.data;
+    const source = new Uint8ClampedArray(pixels);
+
+    // Store average RGB values for each diagonal gradient section.
+    const sectionColors = Array.from({ length: gradientSections }, () => ({
+      r: 0,
+      g: 0,
+      b: 0,
+      count: 0,
+    }));
+
+    // Calculate the average RGB color of each diagonal section.
+    for (let py = y; py < bottom; py++) {
+      for (let px = x; px < right; px++) {
+        const normalizedX = (px - x + 0.5) / width;
+        const normalizedY = (py - y + 0.5) / height;
+
+        const gradientPosition = (normalizedX + normalizedY) / 2;
+
+        const section = Math.min(
+          gradientSections - 1,
+          Math.floor(gradientPosition * gradientSections),
+        );
+
+        const index = (py * imageCanvas.width + px) * 4;
+        const color = sectionColors[section];
+
+        color.r += source[index];
+        color.g += source[index + 1];
+        color.b += source[index + 2];
+        color.count++;
+      }
+    }
+
+    // Calculate average RGB values.
+    for (const color of sectionColors) {
+      if (color.count > 0) {
+        color.r /= color.count;
+        color.g /= color.count;
+        color.b /= color.count;
+      }
+    }
+
+    // Fill empty sections using the nearest populated section.
+    for (let s = 0; s < gradientSections; s++) {
+      if (sectionColors[s].count > 0) continue;
+
+      let nearest = -1;
+      let nearestDistance = Infinity;
+
+      for (let j = 0; j < gradientSections; j++) {
+        if (sectionColors[j].count === 0) continue;
+
+        const distance = Math.abs(s - j);
+
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearest = j;
+        }
+      }
+
+      if (nearest !== -1) {
+        sectionColors[s].r = sectionColors[nearest].r;
+        sectionColors[s].g = sectionColors[nearest].g;
+        sectionColors[s].b = sectionColors[nearest].b;
+      }
+    }
+
+    // Deterministic random variation.
+    let seed =
+      ((width * 73856093) ^ (height * 19349663) ^ (x * 83492791) ^ y) >>> 0;
+
+    function randomVariation() {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return (seed / 4294967296) * 2 - 1;
+    }
+
+    // Generate the pixelated diagonal gradient.
+    for (let by = y; by < bottom; by += pixelSize) {
+      const blockHeight = Math.min(pixelSize, bottom - by);
+
+      for (let bx = x; bx < right; bx += pixelSize) {
+        const blockWidth = Math.min(pixelSize, right - bx);
+
+        const centerX = (bx - x + blockWidth / 2) / width;
+        const centerY = (by - y + blockHeight / 2) / height;
+
+        const gradientPosition = (centerX + centerY) / 2;
+
+        const section = Math.min(
+          gradientSections - 1,
+          Math.floor(gradientPosition * gradientSections),
+        );
+
+        const color = sectionColors[section];
+
+        // Subtle variation applied equally to RGB channels.
+        const variation = randomVariation() * 7;
+
+        const r = Math.round(Math.max(0, Math.min(255, color.r + variation)));
+
+        const g = Math.round(Math.max(0, Math.min(255, color.g + variation)));
+
+        const b = Math.round(Math.max(0, Math.min(255, color.b + variation)));
+
+        // Completely replace the original pixels.
+        for (let py = by; py < by + blockHeight; py++) {
+          for (let px = bx; px < bx + blockWidth; px++) {
+            const index = (py * imageCanvas.width + px) * 4;
+
+            pixels[index] = r;
+            pixels[index + 1] = g;
+            pixels[index + 2] = b;
+            pixels[index + 3] = 255;
+          }
+        }
+      }
+    }
+
+    imageContext.putImageData(imageData, 0, 0);
+
+    setStatus("FalsePixel redaction applied");
+
+    drawSelection();
+    setControls(true);
+
+    return;
+  }
   const blockSize = Number($("blockSize").value);
   const variation =
     effect === "blocks" ? Number($("variation").value) / 100 : 0;
@@ -1050,6 +1192,11 @@ function updateEffectSettings() {
 
   $("variationSetting").classList.toggle("hidden", activeEffect !== "blocks");
 
+  $("falsepixelSetting").classList.toggle(
+    "hidden",
+    activeEffect !== "falsepixel",
+  );
+
   $("brushSetting").classList.toggle("hidden", !isPaint);
 
   $("applyButton").disabled = !imageLoaded || !selection || isPaint;
@@ -1083,6 +1230,14 @@ $("variation").addEventListener("input", (event) => {
 
 $("brushSize").addEventListener("input", (event) => {
   $("brushValue").textContent = `${event.target.value} px`;
+});
+
+$("falsepixelPixelSize").addEventListener("input", (event) => {
+  $("falsepixelPixelSizeValue").textContent = `${event.target.value} px`;
+});
+
+$("falsepixelGradientSections").addEventListener("input", (event) => {
+  // No value display needed, but could add one
 });
 
 // ========================================
