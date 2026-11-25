@@ -120,16 +120,6 @@ select {
   border-radius: 22px;
 }
 
-.island::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 54px;
-  pointer-events: auto;
-}
-
 .brand {
   display: flex;
   align-items: center;

@@ -133,6 +133,20 @@
     </footer>
 
     <script>
+      (function () {
+        var island = document.getElementById("island");
+        var timer = null;
+        island.addEventListener("mouseenter", function () {
+          clearTimeout(timer);
+        });
+        island.addEventListener("mouseleave", function () {
+          timer = setTimeout(function () {
+            island.style.removeProperty("width");
+          }, 200);
+        });
+      })();
+    </script>
+    <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("../../sw.js", {
           scope: "../../",

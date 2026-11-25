@@ -137,6 +137,7 @@
               <option value="pixelate">Pixelate</option>
               <option value="blocks">Randomized blocks</option>
               <option value="solid">Solid black redaction</option>
+              <option value="falsepixel">FalsePixel</option>
               <option value="paint">Paint / Brush</option>
             </select>
 
@@ -193,6 +194,21 @@
 
             <p>Changes block dimensions for a more irregular appearance.</p>
           </div>
+
+          <!-- FALSEPIXEL SETTINGS -->
+          <div class="setting" id="falsepixelSetting">
+            <div class="setting-heading">
+              <label for="falsepixelPixelSize">Pixel size</label>
+              <span id="falsepixelPixelSizeValue">12 px</span>
+            </div>
+
+            <input id="falsepixelPixelSize" type="range" min="4" max="50" value="12" />
+
+            <label for="falsepixelGradientSections">Gradient sections</label>
+            <input id="falsepixelGradientSections" type="range" min="2" max="50" value="10" />
+
+            <p>Controls the size of pixel blocks and number of gradient levels.</p>
+          </div>
         </div>
 
         <div class="bottom-toolbar">
@@ -245,6 +261,20 @@
       <span>Processed locally in your browser</span>
     </footer>
 
+    <script>
+      (function () {
+        var island = document.getElementById("island");
+        var timer = null;
+        island.addEventListener("mouseenter", function () {
+          clearTimeout(timer);
+        });
+        island.addEventListener("mouseleave", function () {
+          timer = setTimeout(function () {
+            island.style.removeProperty("width");
+          }, 200);
+        });
+      })();
+    </script>
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("../../sw.js", {
