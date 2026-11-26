@@ -27,6 +27,7 @@ let selectionBeforeDrag = null;
 let undoStack = [];
 let currentObjectURL = null;
 let loadSequence = 0;
+let originalImageName = "trueblur";
 
 let isPainting = false;
 let paintLastPoint = null;
@@ -135,6 +136,10 @@ function loadImage(file) {
 
       setStatus("Image loaded");
       setControls(true);
+
+      originalImageName =
+        file.name.replace(/\.[^/.]+$/, "") || "trueblur";
+      $("exportFilename").value = `${originalImageName}.png`;
     } catch (error) {
       console.error(error);
       alert("This image could not be processed. Try a smaller image.");
@@ -1162,7 +1167,8 @@ function downloadImage() {
     const link = document.createElement("a");
 
     link.href = url;
-    link.download = "trueblur.png";
+    const filename = $("exportFilename").value.trim() || `${originalImageName}.png`;
+    link.download = filename;
 
     document.body.appendChild(link);
     link.click();

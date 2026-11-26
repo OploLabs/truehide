@@ -161,6 +161,8 @@ function loadImage(file) {
 
       sourceDimensionsElement.textContent = `${image.naturalWidth.toLocaleString()} × ${image.naturalHeight.toLocaleString()}`;
 
+      $("exportFilename").value = `${originalFileName}-cropped`;
+
       setControls(true);
       drawSelection();
 
@@ -712,7 +714,12 @@ function cropImage() {
 
       const extension = extensions[actualFormat] || "png";
 
-      const filename = `${originalFileName}-cropped.${extension}`;
+      let baseName = $("exportFilename").value.trim();
+      if (!baseName) {
+        baseName = originalFileName;
+      }
+
+      const filename = `${baseName}.${extension}`;
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

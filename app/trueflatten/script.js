@@ -20,6 +20,7 @@ let pageRedactions = new Map();
 let activePopover = null;
 let dragStart = null;
 let dragCurrent = null;
+let originalPdfName = "trueflatten";
 
 function getRedactions(page = currentPage) {
   if (!pageRedactions.has(page)) {
@@ -51,6 +52,11 @@ async function loadPDF(file) {
 
     emptyState.classList.add("hidden");
     pdfViewer.classList.remove("hidden");
+
+    originalPdfName =
+      file.name.replace(/\.[^/.]+$/, "").replace(/[^\w-]+/g, "_") || "trueflatten";
+
+    $("exportFilename").value = `${originalPdfName}-redacted.pdf`;
 
     setEnabled(true);
     await renderPage();
@@ -396,7 +402,8 @@ async function flattenPDF() {
       canvas.height = 1;
     }
 
-    output.save("trueflatten.pdf");
+    const filename = $("exportFilename").value.trim() || `${originalPdfName}.pdf`;
+    output.save(filename);
   } catch (error) {
     console.error(error);
     alert("Could not flatten the PDF. Try a smaller document.");
