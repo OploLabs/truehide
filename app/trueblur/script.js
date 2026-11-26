@@ -34,6 +34,12 @@ let paintLastPoint = null;
 let paintUndoSaved = false;
 let activePointerId = null;
 
+// Optimized brush caching & rAF-throttled painting queue
+let brushCache = null;
+let brushCacheRadius = -1;
+let paintQueue = [];
+let paintPendingRAF = null;
+
 let dragDepth = 0;
 
 const MIN_SELECTION = 2;
@@ -473,28 +479,78 @@ function drawPaintPreview() {
   selectionContext.restore();
 }
 
-function paintLine(from, to) {
+function getBrushCache(radius) {
+  if (brushCacheRadius !== radius) {
+    brushCache = document.createElement("canvas");
+    brushCache.width = radius * 2;
+    brushCache.height = radius * 2;
+    const ctx = brushCache.getContext("2d");
+    ctx.clearRect(0, 0, brushCache.width, brushCache.height);
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(radius, radius, radius, 0, Math.PI * 2);
+    ctx.fill();
+    brushCacheRadius = radius;
+  }
+  return brushCache;
+}
+
+function stampBrushAt(point) {
   const radius = getBrushSize() / 2;
+  const brush = getBrushCache(radius);
+  paintContext.drawImage(brush, point.x - radius, point.y - radius);
+}
+
+function stampBrushStroke(from, to) {
+  const radius = getBrushSize() / 2;
+  const brush = getBrushCache(radius);
 
   paintContext.save();
-
   paintContext.globalCompositeOperation = "source-over";
   paintContext.strokeStyle = "#ffffff";
-  paintContext.fillStyle = "#ffffff";
   paintContext.lineWidth = radius * 2;
   paintContext.lineCap = "round";
   paintContext.lineJoin = "round";
-
   paintContext.beginPath();
   paintContext.moveTo(from.x, from.y);
   paintContext.lineTo(to.x, to.y);
   paintContext.stroke();
-
-  paintContext.beginPath();
-  paintContext.arc(to.x, to.y, radius, 0, Math.PI * 2);
-  paintContext.fill();
-
   paintContext.restore();
+
+  paintContext.drawImage(brush, to.x - radius, to.y - radius);
+}
+
+function flushPaintQueue() {
+  paintPendingRAF = null;
+  while (paintQueue.length > 0) {
+    const point = paintQueue.shift();
+    if (paintLastPoint) {
+      stampBrushStroke(paintLastPoint, point);
+    } else {
+      stampBrushAt(point);
+    }
+    paintLastPoint = point;
+  }
+  drawPaintPreview();
+}
+
+function queuePaintMove(point) {
+  paintQueue.push(point);
+  if (!paintPendingRAF) {
+    paintPendingRAF = requestAnimationFrame(flushPaintQueue);
+  }
+}
+
+function paintLine(from, to) {
+  // Kept for compatibility; rAF-throttled path is now preferred via queuePaintMove.
+  if (paintPendingRAF) return;
+  if (paintLastPoint) {
+    stampBrushStroke(paintLastPoint, to);
+  } else {
+    stampBrushAt(to);
+  }
+  paintLastPoint = to;
+  drawPaintPreview();
 }
 
 function startPainting(event) {
@@ -516,9 +572,10 @@ function startPainting(event) {
 
   selectionCanvas.setPointerCapture(event.pointerId);
 
-  paintLine(paintLastPoint, paintLastPoint);
-
+  // Render the initial dot immediately for instant responsiveness
+  stampBrushAt(paintLastPoint);
   drawPaintPreview();
+
   setStatus("Painting...");
 }
 
@@ -529,12 +586,7 @@ function continuePainting(event) {
   event.preventDefault();
 
   const point = getPointerPosition(event);
-
-  paintLine(paintLastPoint, point);
-
-  paintLastPoint = point;
-
-  drawPaintPreview();
+  queuePaintMove(point);
 }
 
 function stopPainting() {
@@ -543,6 +595,12 @@ function stopPainting() {
   isPainting = false;
   paintLastPoint = null;
   activePointerId = null;
+
+  if (paintPendingRAF) {
+    cancelAnimationFrame(paintPendingRAF);
+    paintPendingRAF = null;
+  }
+  paintQueue = [];
 
   applyPaintEffect();
 
@@ -561,6 +619,12 @@ function cancelPainting() {
   paintLastPoint = null;
   activePointerId = null;
   paintUndoSaved = false;
+
+  if (paintPendingRAF) {
+    cancelAnimationFrame(paintPendingRAF);
+    paintPendingRAF = null;
+  }
+  paintQueue = [];
 
   clearPaintMask();
 
