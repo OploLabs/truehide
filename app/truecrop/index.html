@@ -74,15 +74,7 @@
         <div class="toolbar">
           <div class="toolbar-left">
             <label class="button primary" for="imageInput">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-              >
-                <path d="M12 16V4m-5 5 5-5 5 5"></path>
-                <path d="M4 16v4h16v-4"></path>
-              </svg>
+              <span>＋</span>
               Open image
             </label>
 
@@ -126,20 +118,7 @@
 
         <div class="canvas-area" id="canvasArea">
           <div class="empty-state" id="emptyState">
-            <div class="empty-icon">
-              <svg
-                viewBox="0 0 48 48"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="5" y="7" width="38" height="34" rx="6"></rect>
-                <circle cx="16" cy="18" r="3"></circle>
-                <path d="m6 33 11-10 9 8 6-6 11 10"></path>
-              </svg>
-            </div>
+            <div class="empty-icon">▧</div>
 
             <h2>Your canvas is empty</h2>
             <p>Choose an image to start cropping.</p>
@@ -161,21 +140,21 @@
 
         <div class="selection-info">
           <div class="info-group">
-            <span class="info-label">SELECTION</span>
+            <span class="info-label">Selection</span>
             <strong id="dimensions">No selection</strong>
           </div>
 
           <div class="info-divider"></div>
 
           <div class="info-group">
-            <span class="info-label">OUTPUT SIZE</span>
+            <span class="info-label">Output size</span>
             <strong id="outputDimensions">—</strong>
           </div>
 
           <div class="info-divider"></div>
 
           <div class="info-group">
-            <span class="info-label">SOURCE</span>
+            <span class="info-label">Source</span>
             <strong id="sourceDimensions">—</strong>
           </div>
         </div>

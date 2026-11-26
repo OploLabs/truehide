@@ -1,27 +1,28 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
 :root {
   color-scheme: light;
 
-  --bg: #f3f5f9;
-  --surface: rgba(255, 255, 255, 0.76);
+  --bg: #f5f6f8;
+  --surface: rgba(255, 255, 255, 0.78);
   --surface-solid: #ffffff;
   --surface-hover: rgba(120, 140, 180, 0.09);
 
-  --text: #171a22;
-  --muted: #858b99;
+  --text: #17191f;
+  --muted: #777e8b;
   --subtle: #aab0bd;
 
-  --border: rgba(25, 35, 55, 0.09);
-  --border-strong: rgba(25, 35, 55, 0.15);
+  --border: rgba(20, 25, 35, 0.09);
+  --border-strong: rgba(20, 25, 35, 0.15);
 
-  --accent: #608cff;
-  --accent-hover: #4978ec;
+  --accent: #5988f5;
+  --accent-hover: #4775df;
   --accent-soft: rgba(96, 140, 255, 0.12);
 
   --success: #49bd88;
   --danger: #e34f55;
 
-  --shadow:
-    0 25px 80px rgba(35, 48, 75, 0.07), 0 2px 8px rgba(35, 48, 75, 0.025);
+  --shadow: 0 20px 60px rgba(30, 40, 60, 0.07);
 
   --glass-shadow:
     0 12px 40px rgba(30, 40, 60, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -32,26 +33,26 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #0c0e12;
-  --surface: rgba(23, 26, 33, 0.76);
-  --surface-solid: #191c23;
+  --bg: #101216;
+  --surface: rgba(29, 32, 39, 0.78);
+  --surface-solid: #1d2027;
   --surface-hover: rgba(255, 255, 255, 0.055);
 
-  --text: #f1f3f8;
-  --muted: #969eae;
+  --text: #f3f4f7;
+  --muted: #9ba1ae;
   --subtle: #666e7c;
 
-  --border: rgba(255, 255, 255, 0.075);
-  --border-strong: rgba(255, 255, 255, 0.13);
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.15);
 
-  --accent: #7ba0ff;
-  --accent-hover: #94b2ff;
-  --accent-soft: rgba(123, 160, 255, 0.13);
+  --accent: #79a0ff;
+  --accent-hover: #91b1ff;
+  --accent-soft: rgba(121, 160, 255, 0.13);
 
   --success: #58d49a;
-  --danger: #ff7179;
+  --danger: #ff686e;
 
-  --shadow: 0 25px 90px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.12);
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
 
   --glass-shadow:
     0 12px 45px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -72,13 +73,8 @@ body {
   background:
     radial-gradient(
       ellipse at 50% -15%,
-      rgba(95, 139, 255, 0.13),
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse at 0% 50%,
-      rgba(120, 155, 255, 0.045),
-      transparent 40%
+      rgba(91, 139, 255, 0.12),
+      transparent 45%
     ),
     var(--bg);
 
@@ -143,32 +139,30 @@ svg {
 
 .island {
   width: 220px;
-  min-height: 56px;
+  min-height: 54px;
 
-  padding: 8px 10px;
+  padding: 7px 9px;
 
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 18px;
 
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: 30px;
 
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 55%),
-    var(--surface);
+  background: var(--surface);
 
-  backdrop-filter: blur(32px) saturate(200%);
-  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
 
-  box-shadow: var(--glass-shadow);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.09);
 
   pointer-events: auto;
 
   transition:
-    width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-radius 0.35s ease,
+    width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-radius 0.35s,
     background 0.25s ease;
 }
 
@@ -198,7 +192,7 @@ svg {
 
 .island:hover,
 .island:focus-within {
-  width: min(680px, calc(100vw - 32px));
+  width: min(660px, calc(100vw - 32px));
   border-radius: 22px;
 }
 
@@ -210,9 +204,7 @@ svg {
   color: var(--text);
   text-decoration: none;
 
-  font-size: 14px;
-  font-weight: 780;
-  letter-spacing: -0.025em;
+  font-weight: 750;
 
   white-space: nowrap;
 }
@@ -227,18 +219,12 @@ svg {
   border-radius: 50%;
 
   background: url("../../icons/icon-192.svg") center/contain no-repeat;
-
-  box-shadow:
-    0 4px 12px rgba(80, 125, 235, 0.3),
-    inset 0 1px 1px rgba(255, 255, 255, 0.45);
-
-  font-weight: 800;
 }
 
 .island-menu {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 
   max-width: 0;
   overflow: hidden;
@@ -246,8 +232,8 @@ svg {
   opacity: 0;
 
   transition:
-    max-width 0.4s ease,
-    opacity 0.25s ease;
+    max-width 0.35s,
+    opacity 0.2s;
 
   white-space: nowrap;
 }
@@ -256,19 +242,18 @@ svg {
 .island:hover .island-menu *,
 .island:focus-within .island-menu,
 .island:focus-within .island-menu * {
-  max-width: 470px;
+  max-width: 460px;
   opacity: 1;
 }
 
 .island-menu a {
-  padding: 10px 12px;
+  padding: 9px 11px;
   border-radius: 12px;
 
   color: var(--muted);
   text-decoration: none;
 
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
 
   transition:
     color 0.2s,
@@ -276,9 +261,10 @@ svg {
 }
 
 .island-menu a:hover,
-.island-menu a.active {
+.island-menu a.active,
+.island-menu a:focus-visible {
   color: var(--text);
-  background: var(--surface-hover);
+  background: rgba(120, 140, 180, 0.13);
 }
 
 .theme-toggle {
@@ -292,19 +278,23 @@ svg {
   border: 0;
   border-radius: 50%;
 
-  color: var(--text);
   background: transparent;
-
   cursor: pointer;
+}
 
-  transition:
-    transform 0.25s,
-    background 0.2s;
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .theme-toggle:hover {
-  background: var(--surface-hover);
-  transform: rotate(30deg);
+  background: rgba(120, 140, 180, 0.15);
+}
+
+.theme-toggle svg {
+  width: 19px;
+  height: 19px;
+  stroke-width: 1.7;
 }
 
 /* ========================================
@@ -312,8 +302,8 @@ svg {
 ======================================== */
 
 .app {
-  width: min(1120px, calc(100% - 40px));
-  margin: 76px auto 75px;
+  width: min(1100px, calc(100% - 36px));
+  margin: 78px auto 70px;
 }
 
 .intro {
@@ -324,32 +314,29 @@ svg {
 .eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
 
   color: var(--muted);
 
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.17em;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.13em;
 }
 
-.eyebrow span {
+.eyebrow span,
+.instruction-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--success);
-
-  box-shadow: 0 0 12px rgba(73, 189, 136, 0.5);
+  background: #64c995;
 }
 
 h1 {
-  margin: 17px 0 12px;
+  margin: 15px 0 9px;
 
-  font-size: clamp(48px, 7vw, 76px);
-  line-height: 0.98;
-
-  font-weight: 800;
-  letter-spacing: -0.075em;
+  font-size: clamp(42px, 7vw, 66px);
+  letter-spacing: -0.065em;
+  line-height: 1;
 }
 
 h1 span {
@@ -361,8 +348,7 @@ h1 span {
 
   color: var(--muted);
 
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 15px;
 }
 
 /* ========================================
@@ -373,26 +359,24 @@ h1 span {
   overflow: hidden;
 
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: 24px;
 
   background: var(--surface);
 
   box-shadow: var(--shadow);
 
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .toolbar,
 .bottom-toolbar {
-  min-height: 68px;
-
-  padding: 13px 19px;
+  padding: 15px 18px;
 
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
 }
 
 .toolbar {
@@ -416,32 +400,31 @@ h1 span {
 ======================================== */
 
 .button {
-  min-height: 39px;
+  min-height: 38px;
 
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: 8px;
 
-  padding: 0 15px;
+  padding: 0 14px;
 
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: 11px;
 
   background: var(--surface-solid);
   color: var(--text);
 
-  font-size: 12px;
-  font-weight: 680;
+  font-size: 13px;
+  font-weight: 650;
 
   cursor: pointer;
   text-decoration: none;
 
   transition:
-    transform 0.18s ease,
-    background 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
+    transform 0.15s,
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .button svg {
@@ -451,38 +434,30 @@ h1 span {
 
 .button:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(100, 140, 255, 0.4);
-
-  box-shadow: 0 4px 14px rgba(50, 70, 120, 0.07);
+  border-color: rgba(100, 130, 200, 0.35);
 }
 
 .button:active:not(:disabled) {
-  transform: translateY(0) scale(0.98);
+  transform: translateY(0) scale(0.97);
 }
 
 .button:disabled {
-  opacity: 0.38;
+  opacity: 0.4;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
 .button.primary {
-  color: #fff;
-  background: linear-gradient(135deg, #709aff, #527eea);
+  background: var(--accent);
+  color: white;
   border-color: transparent;
-
-  box-shadow:
-    0 4px 13px rgba(83, 127, 235, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .button.primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #82a8ff, #608af5);
-  box-shadow: 0 7px 20px rgba(83, 127, 235, 0.3);
+  background: var(--accent-hover);
 }
 
 .icon-button {
-  width: 39px;
+  width: 38px;
   padding: 0;
 }
 
@@ -494,24 +469,23 @@ h1 span {
 
 .format-control label {
   color: var(--muted);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+  font-size: 11px;
+  font-weight: 650;
 }
 
 .format-control select {
-  min-height: 39px;
+  min-height: 38px;
   min-width: 85px;
 
   padding: 0 12px;
 
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: 11px;
 
   color: var(--text);
   background: var(--surface-solid);
 
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
 
   cursor: pointer;
@@ -522,16 +496,16 @@ h1 span {
 ======================================== */
 
 .canvas-area {
-  min-height: 470px;
+  min-height: 430px;
 
   display: grid;
   place-items: center;
 
-  padding: 35px;
+  padding: 30px;
 
   background: radial-gradient(
     ellipse at center,
-    rgba(120, 145, 190, 0.09),
+    rgba(120, 140, 180, 0.07),
     transparent 65%
   );
 }
@@ -545,45 +519,31 @@ h1 span {
 }
 
 .empty-icon {
-  width: 82px;
-  height: 82px;
+  width: 72px;
+  height: 72px;
 
   display: grid;
   place-items: center;
 
-  border-radius: 25px;
+  border-radius: 22px;
 
   color: var(--accent);
-  background: var(--accent-soft);
+  background: rgba(90, 135, 245, 0.1);
 
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 8px 25px rgba(70, 110, 220, 0.07);
-}
-
-.empty-icon svg {
-  width: 42px;
-  height: 42px;
+  font-size: 38px;
 }
 
 .empty-state h2 {
-  margin: 23px 0 8px;
+  margin: 22px 0 7px;
 
   font-size: 19px;
-  font-weight: 750;
-  letter-spacing: -0.035em;
 }
 
 .empty-state p {
-  margin: 0 0 21px;
+  margin: 0 0 19px;
 
   color: var(--muted);
   font-size: 13px;
-}
-
-.upload-button {
-  min-height: 42px;
-  padding: 0 21px;
 }
 
 .empty-hint {
@@ -611,26 +571,8 @@ h1 span {
 
   line-height: 0;
 
-  background-color: var(--surface-solid);
-
-  background-image:
-    linear-gradient(45deg, rgba(130, 140, 155, 0.13) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(130, 140, 155, 0.13) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(130, 140, 155, 0.13) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(130, 140, 155, 0.13) 75%);
-
-  background-size: 20px 20px;
-  background-position:
-    0 0,
-    0 10px,
-    10px -10px,
-    -10px 0;
-
-  box-shadow:
-    0 18px 45px rgba(0, 0, 0, 0.15),
-    0 2px 8px rgba(0, 0, 0, 0.08);
-
-  border-radius: 3px;
+  background: #fff;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
 }
 
 #imageCanvas {
@@ -667,7 +609,7 @@ h1 span {
   align-items: center;
   gap: 35px;
 
-  padding: 15px 24px;
+  padding: 17px 22px;
 
   border-top: 1px solid var(--border);
 }
@@ -683,16 +625,13 @@ h1 span {
 .info-label {
   color: var(--muted);
 
-  font-size: 9px;
-  font-weight: 750;
-  letter-spacing: 0.11em;
+  font-size: 11px;
 }
 
 .selection-info strong {
   color: var(--text);
 
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
 
   font-variant-numeric: tabular-nums;
 }
@@ -715,12 +654,11 @@ h1 span {
 .tool-instructions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
 
   color: var(--muted);
 
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: 12px;
 }
 
 .instruction-dot {
@@ -735,12 +673,12 @@ h1 span {
 .actions {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
 }
 
 .crop-button {
-  min-height: 42px;
-  padding: 0 18px;
+  min-height: 38px;
+  padding: 0 14px;
 }
 
 /* ========================================
@@ -754,13 +692,13 @@ h1 span {
   align-items: center;
   gap: 10px;
 
-  padding: 12px 20px;
+  padding: 13px 18px;
 
   border-top: 1px solid var(--border);
 
   color: var(--muted);
 
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.6;
 }
 
@@ -912,7 +850,7 @@ h1 span {
 ======================================== */
 
 footer {
-  width: min(1120px, calc(100% - 40px));
+  width: min(1100px, calc(100% - 36px));
 
   display: flex;
   justify-content: space-between;
@@ -920,7 +858,7 @@ footer {
   margin: 0 auto 25px;
 
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 /* ========================================

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 :root {
   color-scheme: light;
@@ -36,7 +36,12 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "DM Sans", sans-serif;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   transition:
     background 0.25s,
     color 0.25s;
@@ -152,7 +157,6 @@ a {
   border-radius: 50%;
   background: transparent;
   cursor: pointer;
-  color: var(--muted);
 }
 
 .theme-toggle:hover {
@@ -201,7 +205,7 @@ main {
 
 .hero h1 {
   font:
-    800 clamp(55px, 9vw, 96px)/1 Manrope,
+    800 clamp(55px, 9vw, 96px)/1 Inter,
     sans-serif;
   letter-spacing: -5px;
   margin: 25px 0;
@@ -267,7 +271,7 @@ main {
 .section-heading h2,
 .privacy h2 {
   font:
-    700 30px Manrope,
+    700 30px Inter,
     sans-serif;
   letter-spacing: -1px;
   margin: 10px 0 0;
@@ -402,7 +406,7 @@ main {
 }
 .tool-card h3 {
   font:
-    700 23px Manrope,
+    700 23px Inter,
     sans-serif;
   margin: 9px 0;
 }
