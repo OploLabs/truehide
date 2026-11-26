@@ -1,6 +1,6 @@
 console.log("[TrueHide SW] Loaded from:", self.location.href);
 console.log("[TrueHide SW] Base directory:", new URL("./", self.location.href));
-const CACHE = "truehide-v4";
+const CACHE = "truehide-v5";
 
 const BASE = new URL("./", self.location.href);
 

@@ -1,6 +1,8 @@
-<!-- Canonical site footer (from the homepage).
-     This markup is inlined into every page; only the relative links
-     differ — app pages use sibling/parent paths (../tool/, ../../#privacy). -->
+<!-- Canonical site footer — the single source of truth.
+     Loaded at runtime by shared/base.js into the [data-shared-footer]
+     placeholder on every page. Internal links are written relative to
+     the site root; base.js prefixes them with the page's depth.
+     Edit this file once — every page updates. -->
 <footer class="site-footer site-footer--full">
   <div class="footer-col">
     <span class="footer-brand">
@@ -15,16 +17,17 @@
   <div class="footer-col">
     <span class="footer-col-label">Tools</span>
     <nav>
-      <a href="./app/trueflatten/">TrueFlatten</a>
-      <a href="./app/trueblur/">TrueBlur</a>
-      <a href="./app/truecrop/">TrueCrop</a>
+      <a href="app/trueflatten/">TrueFlatten</a>
+      <a href="app/trueblur/">TrueBlur</a>
+      <a href="app/truecrop/">TrueCrop</a>
     </nav>
   </div>
   <div class="footer-col">
     <span class="footer-col-label">Privacy</span>
     <nav>
-      <a href="./#privacy">How files are handled</a>
+      <a href="#privacy">How files are handled</a>
       <a href="https://github.com/OploLabs/truehide">Source code</a>
+      <a href="https://github.com/OploLabs/truehide/issues/new">Report an issue</a>
     </nav>
   </div>
   <div class="footer-col footer-col--meta">

@@ -54,8 +54,9 @@ Then visit `http://localhost:8080`.
 ├── icons/               # PWA / favicon icons (SVG)
 ├── shared/
 │   ├── base.css         # Design system: CSS tokens, shared components, themes
-│   ├── base.js          # Shared behavior: theme toggle, island nav, toasts, file drop
-│   └── footer.html      # Canonical footer markup (inlined into every page)
+│   ├── base.js          # Shared behavior: theme, island nav, toasts, file drop,
+│   │                    # shared footer injection, service worker registration
+│   └── footer.html      # Canonical footer — fetched & injected at runtime by base.js
 └── app/
     ├── trueflatten/     # PDF redaction + flattening (pdf.js + jsPDF, vendored in lib/)
     ├── trueblur/        # Image redaction: pixelate, blocks, solid, paint

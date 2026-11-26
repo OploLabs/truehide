@@ -32,9 +32,9 @@ shared/
   base.css                             Design system: CSS custom properties on
                                        :root and [data-theme="dark"], shared components
   base.js                              Theme toggle, island nav, toasts, file drop,
-                                       footer year, service worker registration
-  footer.html                          Canonical footer markup — INLINED into every
-                                       page (homepage + 3 app pages), not fetched
+                                       shared footer injection, service worker registration
+  footer.html                          Canonical footer — the single source of truth;
+                                       fetched & injected at runtime by base.js on every page
 app/
   trueflatten/  index.html, script.js, style.css, lib/{pdf.min.js, pdf.worker.min.js, jspdf.umd.min.js}
   trueblur/     index.html, script.js, style.css
@@ -63,13 +63,19 @@ Tool facts:
   only.
 - **Page depth:** app pages reference shared assets with `../../` prefixes
   (`../../shared/base.css`, `../../manifest.json`, `../../icons/...`).
-- **Footer sync:** the footer in `shared/footer.html` is copied by hand into
-  each of the 4 pages (homepage, trueflatten, trueblur, truecrop). When
-  changing it, update all 4 and keep the relative links correct per depth.
+- **Shared footer:** `shared/footer.html` is the single source of truth for
+  the footer — pages never carry their own copy. Each page holds an empty
+  `<footer class="site-footer site-footer--full" data-shared-footer></footer>`
+  placeholder; `shared/base.js` fetches the file at runtime and injects it,
+  prefixing internal links for the page's depth (homepage: `./`, app pages:
+  `../../`). Internal links in the shared file are written relative to the
+  site root (e.g. `app/trueblur/`, `#privacy`) — never hardcode page-relative
+  paths there. If the fetch is unavailable (e.g. `file://`), a minimal
+  fallback footer is injected instead.
 - **Nav sync:** the island nav header is also duplicated per page; mark the
   current page's link with `class="active"`.
 - **Service worker:** `sw.js` maintains a `SHELL` cache list; the cache name
-  is `truehide-v4` (bump the version when the shell changes). Registration
+  is `truehide-v5` (bump the version when the shell changes). Registration
   happens in `shared/base.js` and is skipped on `file://`.
 
 ## Running and testing
