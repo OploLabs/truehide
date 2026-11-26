@@ -2,34 +2,53 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#101216" />
+    <meta name="theme-color" content="#f4f5f8" />
     <meta
       name="description"
       content="TrueCrop — precision image cropping, processed privately in your browser."
     />
 
     <title>TrueCrop — TrueHide</title>
-
+    <link rel="stylesheet" href="../../shared/base.css" />
     <link rel="stylesheet" href="style.css" />
     <link rel="manifest" href="../../manifest.json" />
     <link rel="icon" href="../../icons/icon-192.svg" type="image/svg+xml" />
-    <link rel="icon" sizes="32x32" href="../../icons/icon-192.svg" />
     <link rel="apple-touch-icon" href="../../icons/icon-192.svg" />
-
+    <script defer src="../../shared/base.js"></script>
     <script defer src="script.js"></script>
   </head>
 
   <body>
     <header class="app-header">
-      <nav class="island" id="island">
+      <nav class="island" id="island" aria-label="Primary">
         <a href="../../" class="brand">
-          <span class="brand-icon"></span>
+          <span class="brand-icon" aria-hidden="true"></span>
           <span>TrueHide</span>
         </a>
 
-        <div class="island-menu">
+        <button
+          class="island-toggle"
+          id="islandToggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="islandMenu"
+          aria-label="Menu"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M4 7h16M4 12h16M4 17h16"></path>
+          </svg>
+        </button>
+
+        <div class="island-menu" id="islandMenu">
           <a href="../../">Home</a>
           <a href="../trueflatten/">TrueFlatten</a>
           <a href="../trueblur/">TrueBlur</a>
@@ -40,7 +59,7 @@
           class="theme-toggle"
           id="themeToggle"
           aria-label="Toggle theme"
-          title="Toggle theme"
+          type="button"
         >
           <svg
             viewBox="0 0 24 24"
@@ -48,6 +67,7 @@
             stroke="currentColor"
             stroke-width="1.7"
             stroke-linecap="round"
+            aria-hidden="true"
           >
             <circle cx="12" cy="12" r="4"></circle>
             <path
@@ -60,10 +80,7 @@
 
     <main class="app">
       <section class="intro">
-        <div class="eyebrow">
-          <span></span>
-          IMAGE PRIVACY TOOL
-        </div>
+        <span class="eyebrow">Image privacy tool</span>
 
         <h1>True<span>Crop</span></h1>
 
@@ -74,14 +91,10 @@
         <div class="toolbar">
           <div class="toolbar-left">
             <label class="button primary" for="imageInput">
-              <span>＋</span>
-              Open image
+              <span aria-hidden="true">＋</span> Open image
             </label>
-
             <input id="imageInput" type="file" accept="image/*" hidden />
-            <span class="toolbar-hint"
-              >or drag an image into the workspace</span
-            >
+            <span class="toolbar-hint">or drag an image into the workspace</span>
           </div>
 
           <div class="toolbar-right">
@@ -98,7 +111,7 @@
               class="button icon-button"
               id="resetButton"
               disabled
-              title="Reset selection"
+              title="Reset"
               aria-label="Reset"
             >
               <svg
@@ -121,6 +134,7 @@
             <div class="empty-icon">▧</div>
 
             <h2>Your canvas is empty</h2>
+
             <p>Choose an image to start cropping.</p>
 
             <label class="button primary upload-button" for="imageInput">
@@ -161,14 +175,20 @@
 
         <div class="bottom-toolbar">
           <div class="tool-instructions">
-            <span class="instruction-dot"></span>
+            <span class="instruction-dot" aria-hidden="true"></span>
             <span id="instructionText"
               >Drag to create a selection. Move or resize it afterward.</span
             >
           </div>
 
           <div class="actions">
-            <input type="text" id="exportFilename" class="filename-input" placeholder="" maxlength="120" />
+            <input
+              type="text"
+              id="exportFilename"
+              class="filename-input"
+              placeholder=""
+              maxlength="120"
+            />
             <button class="button" id="clearButton" disabled>
               Clear selection
             </button>
@@ -185,7 +205,8 @@
                 <path d="M12 3v12m-5-5 5 5 5-5"></path>
                 <path d="M5 17v4h14v-4"></path>
               </svg>
-              Crop &amp; Download
+
+              Crop & Download
             </button>
           </div>
         </div>
@@ -211,7 +232,7 @@
       </section>
     </main>
 
-    <div class="drop-overlay" id="dropOverlay">
+    <div class="drop-overlay" id="dropOverlay" aria-hidden="true">
       <div class="drop-card">
         <div class="drop-icon">
           <svg
@@ -229,33 +250,36 @@
       </div>
     </div>
 
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-    <footer>
-      <span>TrueHide</span>
-      <span>Processed locally in your browser</span>
+    <footer class="site-footer site-footer--full">
+      <div class="footer-col">
+        <span class="footer-brand">
+          <span class="brand-icon" aria-hidden="true"></span>
+          <strong>TrueHide</strong>
+        </span>
+        <p>
+          Free, private file tools. Everything is processed locally in your
+          browser — no uploads, no accounts.
+        </p>
+      </div>
+      <div class="footer-col">
+        <span class="footer-col-label">Tools</span>
+        <nav>
+          <a href="../trueflatten/">TrueFlatten</a>
+          <a href="../trueblur/">TrueBlur</a>
+          <a href="../truecrop/">TrueCrop</a>
+        </nav>
+      </div>
+      <div class="footer-col">
+        <span class="footer-col-label">Privacy</span>
+        <nav>
+          <a href="../../#privacy">How files are handled</a>
+          <a href="https://github.com/OploLabs/truehide">Source code</a>
+        </nav>
+      </div>
+      <div class="footer-col footer-col--meta">
+        <span>© <span id="year">2026</span> TrueHide</span>
+        <span class="footer-plain">Private by design.</span>
+      </div>
     </footer>
-
-    <script>
-      (function () {
-        var island = document.getElementById("island");
-        var timer = null;
-        island.addEventListener("mouseenter", function () {
-          clearTimeout(timer);
-        });
-        island.addEventListener("mouseleave", function () {
-          timer = setTimeout(function () {
-            island.style.removeProperty("width");
-          }, 200);
-        });
-      })();
-    </script>
-    <script>
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("../../sw.js", {
-          scope: "../../",
-        });
-      }
-    </script>
   </body>
 </html>

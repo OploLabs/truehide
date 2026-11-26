@@ -1,19 +1,34 @@
-const themeToggle = document.querySelector("#themeToggle");
+/* Homepage behavior: PWA install button.
+   (Footer year is updated by shared/base.js on every page.) */
 
-function setTheme(theme) {
-  document.documentElement.dataset.theme = theme;
-  localStorage.setItem("truehide-theme", theme);
-}
+(function () {
+  const installButton = document.querySelector(".install-button");
+  const installHint = document.querySelector(".install-hint");
+  let deferredPrompt = null;
 
-setTheme(
-  localStorage.getItem("truehide-theme") ||
-    (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
-);
+  /* Chromium-based browsers expose the install prompt. Show the button;
+     in other browsers the hint line is shown instead. */
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
 
-themeToggle.addEventListener("click", () => {
-  setTheme(
-    document.documentElement.dataset.theme === "dark" ? "light" : "dark",
-  );
-});
+    if (installButton) {
+      installButton.hidden = false;
+      installButton.addEventListener("click", async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        installButton.hidden = true;
+        if (installHint) installHint.hidden = true;
+      });
+    }
 
-document.querySelector("#year").textContent = new Date().getFullYear();
+    if (installHint) installHint.hidden = true;
+  });
+
+  window.addEventListener("appinstalled", () => {
+    if (installButton) installButton.hidden = true;
+    if (installHint) installHint.hidden = true;
+  });
+})();

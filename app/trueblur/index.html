@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#101216" />
+    <meta name="theme-color" content="#f4f5f8" />
     <meta
       name="description"
       content="TrueBlur — redact and pixelate images locally in your browser. Obscure faces, text, and sensitive areas with privacy-first tools."
@@ -12,24 +12,45 @@
 
     <title>TrueBlur — TrueHide</title>
 
+    <link rel="stylesheet" href="../../shared/base.css" />
     <link rel="stylesheet" href="style.css" />
     <link rel="manifest" href="../../manifest.json" />
     <link rel="icon" href="../../icons/icon-192.svg" type="image/svg+xml" />
-    <link rel="icon" sizes="32x32" href="../../icons/icon-192.svg" />
     <link rel="apple-touch-icon" href="../../icons/icon-192.svg" />
 
+    <script defer src="../../shared/base.js"></script>
     <script defer src="script.js"></script>
   </head>
 
   <body>
     <header class="app-header">
-      <nav class="island" id="island">
+      <nav class="island" id="island" aria-label="Primary">
         <a href="../../" class="brand">
-          <span class="brand-icon"></span>
+          <span class="brand-icon" aria-hidden="true"></span>
           <span>TrueHide</span>
         </a>
 
-        <div class="island-menu">
+        <button
+          class="island-toggle"
+          id="islandToggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="islandMenu"
+          aria-label="Menu"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M4 7h16M4 12h16M4 17h16"></path>
+          </svg>
+        </button>
+
+        <div class="island-menu" id="islandMenu">
           <a href="../../">Home</a>
           <a href="../trueflatten/">TrueFlatten</a>
           <a href="../trueblur/" class="active">TrueBlur</a>
@@ -42,11 +63,18 @@
           aria-label="Toggle theme"
           type="button"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
             <circle cx="12" cy="12" r="4"></circle>
             <path
               d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"
-            />
+            ></path>
           </svg>
         </button>
       </nav>
@@ -54,10 +82,7 @@
 
     <main class="app">
       <section class="intro">
-        <div class="eyebrow">
-          <span></span>
-          IMAGE PRIVACY TOOL
-        </div>
+        <span class="eyebrow">Image privacy tool</span>
 
         <h1>True<span>Blur</span></h1>
 
@@ -180,7 +205,9 @@
 
             <input id="blockSize" type="range" min="4" max="100" value="18" />
 
-            <p id="blockDescription">Controls the size of individual processed regions.</p>
+            <p id="blockDescription">
+              Controls the size of individual processed regions.
+            </p>
           </div>
 
           <!-- VARIATION -->
@@ -202,12 +229,26 @@
               <span id="falsepixelPixelSizeValue">12 px</span>
             </div>
 
-            <input id="falsepixelPixelSize" type="range" min="4" max="50" value="12" />
+            <input
+              id="falsepixelPixelSize"
+              type="range"
+              min="4"
+              max="50"
+              value="12"
+            />
 
             <label for="falsepixelGradientSections">Gradient sections</label>
-            <input id="falsepixelGradientSections" type="range" min="2" max="50" value="10" />
+            <input
+              id="falsepixelGradientSections"
+              type="range"
+              min="2"
+              max="50"
+              value="10"
+            />
 
-            <p>Controls the size of pixel blocks and number of gradient levels.</p>
+            <p>
+              Controls the size of pixel blocks and number of gradient levels.
+            </p>
           </div>
         </div>
 
@@ -220,7 +261,13 @@
           </div>
 
           <div class="actions">
-            <input type="text" id="exportFilename" class="filename-input" placeholder="trueblur.png" maxlength="120" />
+            <input
+              type="text"
+              id="exportFilename"
+              class="filename-input"
+              placeholder="trueblur.png"
+              maxlength="120"
+            />
             <button class="button" id="clearSelection" disabled type="button">
               Clear selection
             </button>
@@ -249,39 +296,44 @@
       </section>
     </main>
 
-    <div class="drop-overlay" id="dropOverlay">
+    <div class="drop-overlay" id="dropOverlay" aria-hidden="true">
       <div class="drop-card">
-        <span>🖼️</span>
+        <span aria-hidden="true">🖼️</span>
         <strong>Drop an image here</strong>
         <p>Processed locally in your browser.</p>
       </div>
     </div>
 
-    <footer>
-      <span>TrueHide</span>
-      <span>Processed locally in your browser</span>
+    <footer class="site-footer site-footer--full">
+      <div class="footer-col">
+        <span class="footer-brand">
+          <span class="brand-icon" aria-hidden="true"></span>
+          <strong>TrueHide</strong>
+        </span>
+        <p>
+          Free, private file tools. Everything is processed locally in your
+          browser — no uploads, no accounts.
+        </p>
+      </div>
+      <div class="footer-col">
+        <span class="footer-col-label">Tools</span>
+        <nav>
+          <a href="../trueflatten/">TrueFlatten</a>
+          <a href="../trueblur/">TrueBlur</a>
+          <a href="../truecrop/">TrueCrop</a>
+        </nav>
+      </div>
+      <div class="footer-col">
+        <span class="footer-col-label">Privacy</span>
+        <nav>
+          <a href="../../#privacy">How files are handled</a>
+          <a href="https://github.com/OploLabs/truehide">Source code</a>
+        </nav>
+      </div>
+      <div class="footer-col footer-col--meta">
+        <span>© <span id="year">2026</span> TrueHide</span>
+        <span class="footer-plain">Private by design.</span>
+      </div>
     </footer>
-
-    <script>
-      (function () {
-        var island = document.getElementById("island");
-        var timer = null;
-        island.addEventListener("mouseenter", function () {
-          clearTimeout(timer);
-        });
-        island.addEventListener("mouseleave", function () {
-          timer = setTimeout(function () {
-            island.style.removeProperty("width");
-          }, 200);
-        });
-      })();
-    </script>
-    <script>
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("../../sw.js", {
-          scope: "../../",
-        });
-      }
-    </script>
   </body>
 </html>

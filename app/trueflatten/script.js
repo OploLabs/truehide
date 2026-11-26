@@ -1,7 +1,7 @@
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "lib/pdf.worker.min.js";
 
 const $ = (id) => document.getElementById(id);
+const toast = (message, options) => window.TrueHide.toast(message, options);
 
 const pdfInput = $("pdfInput");
 const pdfCanvas = $("pdfCanvas");
@@ -39,7 +39,7 @@ function setEnabled(enabled) {
 
 async function loadPDF(file) {
   if (!file || file.type !== "application/pdf") {
-    alert("Please select a PDF file.");
+    toast("Please select a PDF file.", { kind: "error" });
     return;
   }
 
@@ -62,7 +62,7 @@ async function loadPDF(file) {
     await renderPage();
   } catch (error) {
     console.error(error);
-    alert("Could not open this PDF.");
+    toast("Could not open this PDF.", { kind: "error" });
   }
 }
 
@@ -393,7 +393,10 @@ async function flattenPDF() {
           compress: true,
         });
       } else {
-        output.addPage([width, height]);
+        output.addPage(
+          [width, height],
+          width > height ? "landscape" : "portrait",
+        );
       }
 
       output.addImage(image, "JPEG", 0, 0, width, height, undefined, "FAST");
@@ -406,7 +409,9 @@ async function flattenPDF() {
     output.save(filename);
   } catch (error) {
     console.error(error);
-    alert("Could not flatten the PDF. Try a smaller document.");
+    toast("Could not flatten the PDF. Try a smaller document.", {
+      kind: "error",
+    });
   } finally {
     button.disabled = false;
     button.textContent = "Flatten & Download";
@@ -425,56 +430,10 @@ window.addEventListener("resize", () => {
   }, 150);
 });
 
-const dropOverlay = $("dropOverlay");
-
-document.addEventListener("dragenter", (event) => {
-  event.preventDefault();
-  if (event.dataTransfer.types.includes("Files")) {
-    dropOverlay.classList.add("visible");
-  }
+window.TrueHide.attachFileDrop({
+  accept: (file) =>
+    file.type === "application/pdf" ||
+    file.name.toLowerCase().endsWith(".pdf"),
+  onFile: (file) => loadPDF(file),
+  rejectMessage: "Please drop a PDF file.",
 });
-
-document.addEventListener("dragover", (event) => {
-  event.preventDefault();
-});
-
-document.addEventListener("dragleave", (event) => {
-  event.preventDefault();
-  dropOverlay.classList.remove("visible");
-});
-
-document.addEventListener("drop", (event) => {
-  event.preventDefault();
-  dropOverlay.classList.remove("visible");
-
-  const file = event.dataTransfer.files[0];
-  if (!file) return;
-
-  if (
-    file.type !== "application/pdf" &&
-    !file.name.toLowerCase().endsWith(".pdf")
-  ) {
-    alert("Please drop a PDF file.");
-    return;
-  }
-
-  loadPDF(file);
-});
-
-function initializeTheme() {
-  const saved = localStorage.getItem("truehide-theme");
-
-  if (saved) {
-    document.documentElement.dataset.theme = saved;
-  }
-
-  $("themeToggle").addEventListener("click", () => {
-    const current = document.documentElement.dataset.theme;
-    const next = current === "dark" ? "light" : "dark";
-
-    document.documentElement.dataset.theme = next;
-    localStorage.setItem("truehide-theme", next);
-  });
-}
-
-initializeTheme();

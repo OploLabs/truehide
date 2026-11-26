@@ -5,6 +5,7 @@
 ======================================== */
 
 const $ = (id) => document.getElementById(id);
+const toast = (message, kind) => window.TrueHide.toast(message, { kind });
 
 const imageInput = $("imageInput");
 const imageCanvas = $("imageCanvas");
@@ -15,8 +16,6 @@ const selectionContext = selectionCanvas.getContext("2d");
 
 const stage = $("stage");
 const emptyState = $("emptyState");
-const dropOverlay = $("dropOverlay");
-const toastElement = $("toast");
 
 const dimensionsElement = $("dimensions");
 const outputDimensionsElement = $("outputDimensions");
@@ -27,6 +26,7 @@ const clearButton = $("clearButton");
 const cropButton = $("cropButton");
 
 const formatSelect = $("format");
+const filenameInput = $("exportFilename");
 
 /* ========================================
    STATE
@@ -41,9 +41,6 @@ let previewSelection = null;
 
 let interaction = null;
 let pointerId = null;
-
-let toastTimeout = null;
-let dragDepth = 0;
 
 /* ========================================
    UTILITIES
@@ -83,21 +80,11 @@ function constrainRect(rect) {
   };
 }
 
-function showToast(message) {
-  toastElement.textContent = message;
-  toastElement.classList.add("visible");
-
-  clearTimeout(toastTimeout);
-
-  toastTimeout = setTimeout(() => {
-    toastElement.classList.remove("visible");
-  }, 2600);
-}
-
 function setControls(enabled) {
   resetButton.disabled = !enabled;
   clearButton.disabled = !enabled;
   cropButton.disabled = !enabled || !selection;
+  filenameInput.disabled = !enabled;
 }
 
 function updateDimensions(rect = selection) {
@@ -126,7 +113,7 @@ function loadImage(file) {
   if (!file) return;
 
   if (!file.type.startsWith("image/")) {
-    showToast("Please select a valid image.");
+    toast("Please select a valid image.", "error");
     return;
   }
 
@@ -139,6 +126,8 @@ function loadImage(file) {
 
       originalFileName =
         file.name.replace(/\.[^/.]+$/, "").replace(/[^\w-]+/g, "_") || "image";
+
+      filenameInput.placeholder = `${originalFileName}-cropped`;
 
       imageCanvas.width = image.naturalWidth;
       imageCanvas.height = image.naturalHeight;
@@ -161,17 +150,15 @@ function loadImage(file) {
 
       sourceDimensionsElement.textContent = `${image.naturalWidth.toLocaleString()} × ${image.naturalHeight.toLocaleString()}`;
 
-      $("exportFilename").value = `${originalFileName}-cropped`;
-
       setControls(true);
       drawSelection();
 
       imageInput.value = "";
 
-      showToast("Image loaded successfully.");
+      toast("Image loaded successfully.", "success");
     } catch (error) {
       console.error(error);
-      showToast("Could not process this image.");
+      toast("Could not process this image.", "error");
     } finally {
       URL.revokeObjectURL(url);
     }
@@ -179,7 +166,7 @@ function loadImage(file) {
 
   image.onerror = () => {
     URL.revokeObjectURL(url);
-    showToast("Could not load this image.");
+    toast("Could not load this image.", "error");
   };
 
   image.src = url;
@@ -611,7 +598,7 @@ function clearSelection() {
 
   drawSelection();
 
-  showToast("Selection cleared.");
+  toast("Selection cleared.");
 }
 
 function resetImage() {
@@ -623,7 +610,7 @@ function resetImage() {
 
   clearSelection();
 
-  showToast("Image reset.");
+  toast("Image reset.");
 }
 
 resetButton.addEventListener("click", resetImage);
@@ -633,9 +620,18 @@ clearButton.addEventListener("click", clearSelection);
    CROP AND EXPORT
 ======================================== */
 
+const CROP_BUTTON_HTML = `
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3v12m-5-5 5 5 5-5"></path>
+    <path d="M5 17v4h14v-4"></path>
+  </svg>
+  Crop &amp; Download
+`;
+
 function cropImage() {
   if (!selection || !imageLoaded) {
-    showToast("Create a selection first.");
+    toast("Create a selection first.", "error");
     return;
   }
 
@@ -656,7 +652,7 @@ function cropImage() {
   const outputContext = outputCanvas.getContext("2d");
 
   if (!outputContext) {
-    showToast("Could not create the output image.");
+    toast("Could not create the output image.", "error");
     return;
   }
 
@@ -683,22 +679,15 @@ function cropImage() {
   );
 
   cropButton.disabled = true;
-  cropButton.textContent = "Exporting...";
+  cropButton.textContent = "Exporting…";
 
   outputCanvas.toBlob(
     (blob) => {
       cropButton.disabled = false;
-      cropButton.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 3v12m-5-5 5 5 5-5"></path>
-          <path d="M5 17v4h14v-4"></path>
-        </svg>
-        Crop &amp; Download
-      `;
+      cropButton.innerHTML = CROP_BUTTON_HTML;
 
       if (!blob) {
-        showToast("Could not export the image.");
+        toast("Could not export the image.", "error");
         return;
       }
 
@@ -714,12 +703,11 @@ function cropImage() {
 
       const extension = extensions[actualFormat] || "png";
 
-      let baseName = $("exportFilename").value.trim();
-      if (!baseName) {
-        baseName = originalFileName;
-      }
+      // Custom filename from the toolbar; defaults to "<name>-cropped".
 
-      const filename = `${baseName}.${extension}`;
+      const base = filenameInput.value.trim() || `${originalFileName}-cropped`;
+
+      const filename = `${base}.${extension}`;
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -733,7 +721,7 @@ function cropImage() {
 
       setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-      showToast(`Exported ${rect.width} × ${rect.height} image.`);
+      toast(`Exported ${rect.width} × ${rect.height} image.`, "success");
     },
     format,
     format === "image/jpeg" ? 0.95 : undefined,
@@ -784,92 +772,13 @@ document.addEventListener("keydown", (event) => {
 });
 
 /* ========================================
-   THEME
+   DRAG AND DROP (shared)
 ======================================== */
 
-function initializeTheme() {
-  const savedTheme = localStorage.getItem("truehide-theme");
-
-  if (savedTheme === "dark" || savedTheme === "light") {
-    document.documentElement.dataset.theme = savedTheme;
-  } else {
-    document.documentElement.dataset.theme = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches
-      ? "dark"
-      : "light";
-  }
-
-  $("themeToggle").addEventListener("click", () => {
-    const current = document.documentElement.dataset.theme;
-
-    const next = current === "dark" ? "light" : "dark";
-
-    document.documentElement.dataset.theme = next;
-
-    localStorage.setItem("truehide-theme", next);
-  });
-}
-
-initializeTheme();
-
-/* ========================================
-   DRAG AND DROP
-======================================== */
-
-function hasFiles(event) {
-  return Array.from(event.dataTransfer?.types || []).includes("Files");
-}
-
-document.addEventListener("dragenter", (event) => {
-  if (!hasFiles(event)) return;
-
-  event.preventDefault();
-
-  dragDepth++;
-
-  dropOverlay.classList.add("visible");
-});
-
-document.addEventListener("dragover", (event) => {
-  if (!hasFiles(event)) return;
-
-  event.preventDefault();
-
-  event.dataTransfer.dropEffect = "copy";
-});
-
-document.addEventListener("dragleave", (event) => {
-  if (!hasFiles(event)) return;
-
-  event.preventDefault();
-
-  dragDepth = Math.max(0, dragDepth - 1);
-
-  if (dragDepth === 0) {
-    dropOverlay.classList.remove("visible");
-  }
-});
-
-document.addEventListener("drop", (event) => {
-  if (!hasFiles(event)) return;
-
-  event.preventDefault();
-
-  dragDepth = 0;
-
-  dropOverlay.classList.remove("visible");
-
-  const files = Array.from(event.dataTransfer.files);
-
-  const file = files.find((item) => item.type.startsWith("image/"));
-
-  if (!file) {
-    showToast("No supported image found.");
-    return;
-  }
-
-  loadImage(file);
+window.TrueHide.attachFileDrop({
+  accept: (file) => file.type.startsWith("image/"),
+  onFile: (file) => loadImage(file),
+  rejectMessage: "No supported image found.",
 });
 
 /* ========================================

@@ -1,6 +1,6 @@
 console.log("[TrueHide SW] Loaded from:", self.location.href);
 console.log("[TrueHide SW] Base directory:", new URL("./", self.location.href));
-const CACHE = "truehide-v2";
+const CACHE = "truehide-v4";
 
 const BASE = new URL("./", self.location.href);
 
@@ -10,12 +10,18 @@ const SHELL = [
   "./styles.css",
   "./script.js",
   "./manifest.json",
+  "./shared/base.css",
+  "./shared/base.js",
+  "./shared/footer.html",
   "./icons/icon-192.svg",
   "./icons/icon-512.svg",
 
   "./app/trueflatten/index.html",
   "./app/trueflatten/style.css",
   "./app/trueflatten/script.js",
+  "./app/trueflatten/lib/pdf.min.js",
+  "./app/trueflatten/lib/pdf.worker.min.js",
+  "./app/trueflatten/lib/jspdf.umd.min.js",
 
   "./app/trueblur/index.html",
   "./app/trueblur/style.css",

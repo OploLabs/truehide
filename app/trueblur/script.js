@@ -40,9 +40,9 @@ let brushCacheRadius = -1;
 let paintQueue = [];
 let paintPendingRAF = null;
 
-let dragDepth = 0;
-
 const MIN_SELECTION = 2;
+
+const toast = (message, options) => window.TrueHide.toast(message, options);
 
 // ========================================
 // STATUS AND CONTROLS
@@ -80,7 +80,7 @@ function clearPaintMask() {
 
 function loadImage(file) {
   if (!file || !file.type.startsWith("image/")) {
-    alert("Please select a valid image.");
+    toast("Please select a valid image.", { kind: "error" });
     return;
   }
 
@@ -148,7 +148,9 @@ function loadImage(file) {
       $("exportFilename").value = `${originalImageName}.png`;
     } catch (error) {
       console.error(error);
-      alert("This image could not be processed. Try a smaller image.");
+      toast("This image could not be processed. Try a smaller image.", {
+        kind: "error",
+      });
       imageLoaded = false;
     } finally {
       URL.revokeObjectURL(objectURL);
@@ -168,7 +170,7 @@ function loadImage(file) {
       currentObjectURL = null;
     }
 
-    alert("Could not load this image.");
+    toast("Could not load this image.", { kind: "error" });
   };
 
   image.src = objectURL;
@@ -1223,7 +1225,7 @@ function downloadImage() {
 
   imageCanvas.toBlob((blob) => {
     if (!blob) {
-      alert("Could not create the image.");
+      toast("Could not create the image.", { kind: "error" });
       return;
     }
 
@@ -1375,74 +1377,12 @@ document.addEventListener("keydown", (event) => {
 });
 
 // ========================================
-// THEME
-// ========================================
-
-function initializeTheme() {
-  const saved = localStorage.getItem("truehide-theme");
-
-  if (saved) {
-    document.documentElement.dataset.theme = saved;
-  }
-
-  $("themeToggle").addEventListener("click", () => {
-    const current = document.documentElement.dataset.theme;
-    const next = current === "dark" ? "light" : "dark";
-
-    document.documentElement.dataset.theme = next;
-
-    localStorage.setItem("truehide-theme", next);
-  });
-}
-
-initializeTheme();
-
-// ========================================
 // DRAG AND DROP
 // ========================================
 
-const dropOverlay = $("dropOverlay");
-
-document.addEventListener("dragenter", (event) => {
-  if (!event.dataTransfer.types.includes("Files")) return;
-
-  event.preventDefault();
-
-  dragDepth++;
-
-  dropOverlay.classList.add("visible");
-});
-
-document.addEventListener("dragover", (event) => {
-  if (event.dataTransfer.types.includes("Files")) {
-    event.preventDefault();
-  }
-});
-
-document.addEventListener("dragleave", (event) => {
-  if (!event.dataTransfer.types.includes("Files")) return;
-
-  dragDepth = Math.max(0, dragDepth - 1);
-
-  if (dragDepth === 0) {
-    dropOverlay.classList.remove("visible");
-  }
-});
-
-document.addEventListener("drop", (event) => {
-  if (!event.dataTransfer.types.includes("Files")) return;
-
-  event.preventDefault();
-
-  dragDepth = 0;
-
-  dropOverlay.classList.remove("visible");
-
-  const file = event.dataTransfer.files[0];
-
-  if (file) {
-    loadImage(file);
-  }
+window.TrueHide.attachFileDrop({
+  accept: (file) => file.type.startsWith("image/"),
+  onFile: (file) => loadImage(file),
 });
 
 // ========================================
