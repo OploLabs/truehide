@@ -179,10 +179,59 @@
     attachFileDrop,
   };
 
-  /* ---------------- Footer year ---------------- */
+  /* ---------------- Shared footer ----------------
+     The footer markup lives in shared/footer.html (single source of truth).
+     It is fetched and injected into the [data-shared-footer] placeholder,
+     with internal links prefixed for this page's depth. */
 
-  const yearElement = document.getElementById("year");
-  if (yearElement) yearElement.textContent = String(new Date().getFullYear());
+  const isAppPage = document.baseURI.includes("/app/");
+  const rootPrefix = isAppPage ? "../../" : "./";
+
+  function injectFooter(html) {
+    const placeholder = document.querySelector("[data-shared-footer]");
+    if (!placeholder) return;
+
+    const template = document.createElement("template");
+    template.innerHTML = html.trim();
+    const footer = template.content.querySelector("footer");
+    if (!footer) return;
+
+    // Prefix internal links so they resolve from this page's depth.
+    footer.querySelectorAll("a[href]").forEach((anchor) => {
+      const href = anchor.getAttribute("href");
+      if (!href || /^(?:https?:|\/\/|mailto:|tel:)/i.test(href)) return;
+
+      if (href[0] === "#") {
+        // Page-local anchors stay on this page; on app pages the #privacy
+        // anchor lives on the homepage.
+        anchor.setAttribute("href", (isAppPage ? "../../" : "") + href);
+      } else {
+        anchor.setAttribute("href", rootPrefix + href);
+      }
+    });
+
+    // Keep the copyright year current.
+    const year = footer.querySelector("#year");
+    if (year) year.textContent = String(new Date().getFullYear());
+
+    placeholder.replaceWith(footer);
+  }
+
+  if (document.querySelector("[data-shared-footer]")) {
+    fetch(rootPrefix + "shared/footer.html")
+      .then((response) => {
+        if (!response.ok) throw new Error(response.status);
+        return response.text();
+      })
+      .then(injectFooter)
+      .catch(() => {
+        // Fetch unavailable (e.g. opened via file://, where the browser
+        // blocks it): keep a minimal footer so the page is not left bare.
+        injectFooter(
+          '<footer class="site-footer site-footer--full"><div class="footer-col"><span class="footer-brand"><span class="brand-icon" aria-hidden="true"></span><strong>TrueHide</strong></span><p>Free, private file tools. Everything is processed locally in your browser — no uploads, no accounts.</p></div><div class="footer-col footer-col--meta"><span>© <span id="year"></span> TrueHide</span><span class="footer-plain">Private by design.</span></div></footer>',
+        );
+      });
+  }
 
   if ("serviceWorker" in navigator && !location.protocol.startsWith("file:")) {
     const swPath = document.baseURI.includes("/app/") ? "../../sw.js" : "sw.js";
