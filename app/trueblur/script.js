@@ -1253,23 +1253,50 @@ function updateEffectSettings() {
   const paintEffect = $("paintEffect").value;
 
   const isPaint = effect === "paint";
+  const activeEffect = isPaint ? paintEffect : effect;
 
   $("paintSettings").classList.toggle("hidden", !isPaint);
 
-  const activeEffect = isPaint ? paintEffect : effect;
+  // Update label and description based on whether we are pixelating
+  const isPixelate = activeEffect === "pixelate";
+  $("blockSizeLabel").textContent = isPixelate ? "Pixel size" : "Block size";
+  $("blockDescription").textContent = isPixelate 
+    ? "Controls the size of individual pixels." 
+    : "Controls the size of individual processed regions.";
 
-  $("blockSetting").classList.toggle("hidden", activeEffect === "solid");
+  // If in paint mode, only show block/variation if they are relevant to the paint effect.
+  // We need to ensure that when not in paint mode, these settings behave correctly for the main effect.
 
-  $("variationSetting").classList.toggle("hidden", activeEffect !== "blocks");
+  let showBlock = false;
+  let showVariation = false;
+  let showFalsePixel = false;
 
-  $("falsepixelSetting").classList.toggle(
-    "hidden",
-    activeEffect !== "falsepixel",
-  );
+  if (isPaint) {
+    if (paintEffect !== "solid") {
+      showBlock = true;
+    }
+    if (paintEffect === "blocks") {
+      showVariation = true;
+    }
+  } else {
+    if (effect !== "solid" && effect !== "paint") {
+      showBlock = true;
+    }
+    if (effect === "blocks") {
+      showVariation = true;
+    }
+    if (effect === "falsepixel") {
+      showFalsePixel = true;
+    }
+  }
+
+  $("blockSetting").classList.toggle("hidden", !showBlock);
+  $("variationSetting").classList.toggle("hidden", !showVariation);
+  $("falsepixelSetting").classList.toggle("hidden", !showFalsePixel);
 
   $("brushSetting").classList.toggle("hidden", !isPaint);
 
-  $("applyButton").disabled = !imageLoaded || !selection || isPaint;
+  $("applyButton").disabled = !imageLoaded || (!selection && !isPaint);
 
   selectionCanvas.style.cursor = isPaint ? "crosshair" : "crosshair";
 
