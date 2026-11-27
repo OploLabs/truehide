@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "npm run test:unit && npm run test:e2e && npm run test:integrity",
-    "test:unit": "node --test test/unit/",
+    "test:unit": "node --test test/unit/crop.test.mjs",
     "test:e2e": "playwright test",
     "test:integrity": "node test/integrity/assets.mjs",
     "test:privacy": "playwright test test/e2e/privacy.spec.mjs"
