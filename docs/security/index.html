@@ -43,6 +43,7 @@
           <a href="../../app/trueflatten/">TrueFlatten</a>
           <a href="../../app/trueblur/">TrueBlur</a>
           <a href="../../app/truecrop/">TrueCrop</a>
+          <a href="../../app/truemetadata/">TrueMetadata</a>
         </div>
 
         <button
@@ -74,7 +75,8 @@
       <section id="core-claim">
         <h2>Core claim</h2>
 
-        <p>Every file you open in TrueFlatten, TrueBlur, or TrueCrop is processed
+        <p>Every file you open in TrueFlatten, TrueBlur, TrueCrop, or TrueMetadata
+        is processed
         entirely in your browser. No file contents are uploaded, sent to a server,
         or stored anywhere permanent.</p>
       </section>
@@ -91,6 +93,9 @@
 
           <dt>Images (TrueCrop)</dt>
           <dd>Canvas crop + PNG/JPEG/WebP export. The export preserves or discards alpha per the chosen format. JPEG fills transparent areas with white.</dd>
+
+          <dt>Image metadata (TrueMetadata)</dt>
+          <dd>EXIF, XMP, PNG text chunks, and WebP metadata chunks are read and stripped at the byte level — no pixel data is touched. The cleaned export is re-read by the same parser to verify nothing metadata-like remains. Unsupported containers (TIFF, HEIC, GIF, PDF) are shown as unsupported rather than cleaned silently.</dd>
         </dl>
       </section>
 
@@ -127,6 +132,7 @@
           <li><strong>Canvas effects</strong> (TrueBlur pixelate/blocks/FalsePixel/paint): visual obfuscation only — the original pixel data remains on the canvas until overwritten.</li>
           <li><strong>TrueFlatten PDF redaction</strong>: permanent at the pixel level because the output is a fresh rasterized PDF, but source annotations, AcroForm fields, and embedded files are stripped by the rasterization process; the output still carries jsPDF‑generated XMP metadata.</li>
           <li><strong>TrueCrop JPEG export</strong>: transparency is lost — the background fills with white.</li>
+          <li><strong>TrueMetadata removal</strong>: stripping is container‑level (EXIF blocks, XMP blocks, PNG text chunks) — selecting a category still removes the whole block it lives in, which only over‑removes. The cleaned export is re‑read to verify; a canvas re‑encode fallback may change JPEG/WebP quality slightly. ICC color profiles are intentionally kept.</li>
         </ul>
       </section>
 

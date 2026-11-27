@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f4f5f8" />
+    <meta
+      name="description"
+      content="TrueMetadata — view and remove image metadata (EXIF, XMP, GPS) privately in your browser."
+    />
+
+    <title>TrueMetadata — TrueHide</title>
+    <link rel="stylesheet" href="../../shared/base.css" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="../../manifest.json" />
+    <link rel="icon" href="../../icons/icon-192.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="../../icons/icon-192.svg" />
+    <script defer src="../../shared/base.js"></script>
+    <script defer src="../../shared/dialog.js"></script>
+    <script defer src="../../shared/shortcuts.js"></script>
+    <script defer src="script.js"></script>
+  </head>
+
+  <body>
+    <header class="app-header">
+      <nav class="island" id="island" aria-label="Primary">
+        <a href="../../" class="brand">
+          <span class="brand-icon" aria-hidden="true"></span>
+          <span>TrueHide</span>
+        </a>
+
+        <button
+          class="island-toggle"
+          id="islandToggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="islandMenu"
+          aria-label="Menu"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M4 7h16M4 12h16M4 17h16"></path>
+          </svg>
+        </button>
+
+        <div class="island-menu" id="islandMenu">
+          <a href="../../">Home</a>
+          <a href="../trueflatten/">TrueFlatten</a>
+          <a href="../trueblur/">TrueBlur</a>
+          <a href="../truecrop/">TrueCrop</a>
+          <a href="../truemetadata/" class="active">TrueMetadata</a>
+        </div>
+
+        <button
+          class="theme-toggle"
+          id="themeToggle"
+          aria-label="Toggle theme"
+          type="button"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="4"></circle>
+            <path
+              d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"
+            ></path>
+          </svg>
+        </button>
+      </nav>
+    </header>
+
+    <main class="app">
+      <section class="intro">
+        <span class="eyebrow">Image privacy tool</span>
+
+        <h1>True<span>Metadata</span></h1>
+
+        <p>
+          See exactly what an image carries — camera, GPS, dates, software —
+          and export a clean copy with the metadata physically removed.
+        </p>
+      </section>
+
+      <section class="workspace">
+        <div class="toolbar">
+          <label class="button primary" for="fileInput"
+            ><span aria-hidden="true">＋</span> Open image</label
+          >
+
+          <input id="fileInput" type="file" accept="image/*" />
+
+          <span class="toolbar-hint" id="toolbarHint"
+            >JPEG · PNG · WebP</span
+          >
+
+          <div class="toolbar-spacer"></div>
+
+          <button class="button" id="openAnotherButton" type="button" hidden>
+            Open another image
+          </button>
+        </div>
+
+        <div class="file-strip hidden" id="fileStrip" aria-live="polite">
+          <img id="thumb" alt="" />
+          <div class="file-strip-info">
+            <strong id="fileName">—</strong>
+            <span id="fileSpecs">—</span>
+          </div>
+          <span class="status-chip" id="statusChip"
+            ><span class="chip-dot" aria-hidden="true"></span
+            ><span id="statusChipText">…</span></span
+          >
+        </div>
+
+        <div class="meta-area" id="metaArea" aria-live="polite">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">▤</div>
+
+            <h2>Choose an image</h2>
+
+            <p>
+              Drop an image here or select one from your device. The metadata
+              is read locally — the file never leaves your browser.
+            </p>
+
+            <label class="button primary" for="fileInput">
+              Choose image
+            </label>
+          </div>
+
+          <div class="hidden" id="metaPanels">
+            <section class="panel" aria-labelledby="beforeTitle">
+              <div class="panel-heading">
+                <h2 id="beforeTitle">Before — what this image carries</h2>
+                <p id="beforeCount">—</p>
+              </div>
+
+              <div class="cat-select" role="group" aria-label="Categories to remove">
+                <div class="cat-select-head">
+                  <span class="cat-select-label">Remove</span>
+                  <label class="cat-all">
+                    <input type="checkbox" id="catAll" checked />
+                    All
+                  </label>
+                </div>
+
+                <div class="cat-grid" id="catGrid"></div>
+
+                <p class="cat-note" id="catNote">
+                  Removal is container-level: image metadata lives in blocks
+                  (EXIF, XMP, comments, text chunks) that can't be split by
+                  field. Whatever you select, the whole block is stripped —
+                  which only makes the export safer.
+                </p>
+              </div>
+
+              <div class="panel-actions">
+                <button
+                  class="button primary"
+                  id="removeButton"
+                  type="button"
+                  disabled
+                >
+                  Remove metadata
+                </button>
+
+                <span class="panel-actions-note" id="removeNote"></span>
+              </div>
+
+              <div class="meta-tables" id="beforeTables"></div>
+            </section>
+
+            <section class="panel" id="afterPanel" aria-labelledby="afterTitle">
+              <div class="panel-heading">
+                <h2 id="afterTitle">After — verified clean export</h2>
+                <p id="afterCount">—</p>
+              </div>
+
+              <div class="after-summary" id="afterSummary"></div>
+
+              <div class="meta-tables" id="afterTables"></div>
+
+              <div class="panel-actions">
+                <button class="button primary" id="downloadButton" type="button" disabled>
+                  Download cleaned image
+                </button>
+
+                <button class="button" id="copySummaryButton" type="button" hidden>
+                  Copy summary
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div class="notice hidden" id="formatNotice" role="status">
+          <strong>Unsupported metadata format.</strong>
+          <p id="formatNoticeText"></p>
+        </div>
+      </section>
+
+      <p class="privacy-foot">
+        Everything on this page is processed locally in your browser. No
+        upload endpoint exists in this code — and no map service is ever
+        called to display GPS coordinates.
+      </p>
+    </main>
+
+    <footer class="site-footer site-footer--full" data-shared-footer></footer>
+
+    <div class="drop-overlay" id="dropOverlay">
+      <div class="drop-card">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 3v12m0 0 4-4m-4 4-4-4"></path>
+          <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path>
+        </svg>
+        <strong>Drop image to inspect</strong>
+        <p>JPEG, PNG or WebP — read entirely on this device.</p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -17,6 +17,7 @@ test.describe("TrueHide — privacy & network monitoring", () => {
       '/app/trueflatten/',
       '/app/trueblur/',
       '/app/truecrop/',
+      '/app/truemetadata/',
     ];
 
     for (const rel of pages) {

@@ -53,6 +53,7 @@ app/
   trueflatten/  index.html, script.js, style.css, lib/{pdf.min.js, pdf.worker.min.js, jspdf.umd.min.js}
   trueblur/     index.html, script.js, style.css
   truecrop/     index.html, script.js, style.css
+  truemetadata/ index.html, script.js, style.css
 ```
 
 Tool facts:
@@ -62,6 +63,9 @@ Tool facts:
 - TrueBlur: Canvas-based. Modes: pixelate, blocks, solid black (irreversible),
   paint. Pixelate/Blocks are visual obfuscation only.
 - TrueCrop: Canvas crop; exports PNG, JPEG, WebP.
+- TrueMetadata: pure JS (no libraries) EXIF/TIFF, XMP, PNG text-chunk and WebP
+  RIFF-chunk parser; byte-level metadata stripping with canvas re-encode
+  fallback; verifies the export by re-reading it.
 
 ## Conventions
 
@@ -100,7 +104,7 @@ npx serve .
 python -m http.server 8080
 ```
 
-Pages: `/`, `/app/trueflatten/`, `/app/trueblur/`, `/app/truecrop/`.
+Pages: `/`, `/app/trueflatten/`, `/app/trueblur/`, `/app/truecrop/`, `/app/truemetadata/`.
 
 Test tooling (dev-only, run from the repo root after `npm install`):
 

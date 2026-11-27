@@ -11,6 +11,7 @@ Privacy-first tools for documents and images. Everything runs locally in your br
 | [TrueFlatten](./app/trueflatten/) | Flatten PDFs and permanently burn redactions into every page by rasterizing.                                        | Documents that must not allow text extraction after redaction. |
 | [TrueBlur](./app/trueblur/)       | Destructively transform selected image areas with randomized processing (pixelate, blocks, solid redaction, paint). | Obscuring faces, license plates, and sensitive visual details. |
 | [TrueCrop](./app/truecrop/)       | Crop exactly what you select and download the result in PNG, JPEG, or WebP.                                         | Removing extra context from images before sharing.             |
+| [TrueMetadata](./app/truemetadata/)| View an image's EXIF, XMP, GPS, and other metadata, then export a clean copy with it byte‑level stripped and re‑read for verification. | Removing camera, location, and software data from images before sharing. |
 
 ---
 
@@ -65,7 +66,8 @@ Then visit `http://localhost:8080`.
 └── app/
     ├── trueflatten/      # PDF redaction + flattening (pdf.js + jsPDF, vendored in lib/)
     ├── trueblur/         # Image redaction: pixelate, blocks, solid, paint
-    └── truecrop/         # Image cropping, PNG/JPEG/WebP export
+    ├── truecrop/         # Image cropping, PNG/JPEG/WebP export
+    └── truemetadata/     # Image metadata viewer + byte‑level removal (EXIF, XMP, GPS, PNG text)
 ```
 
 ---
@@ -82,7 +84,7 @@ Then visit `http://localhost:8080`.
 
 ## Privacy notes
 
-TrueBlur's _Pixelate_ and _Blocks_ modes are visual obfuscation — they don't guarantee irreversible redaction on their own. For sensitive information, use **Solid black redaction** instead. TrueFlatten converts pages to images before flattening, which is the most reliable way to remove metadata and selectable text.
+TrueBlur's _Pixelate_ and _Blocks_ modes are visual obfuscation — they don't guarantee irreversible redaction on their own. For sensitive information, use **Solid black redaction** instead. TrueFlatten converts pages to images before flattening, which is the most reliable way to remove metadata and selectable text. TrueMetadata strips image metadata (EXIF, XMP, GPS) at the byte level and verifies the export by re‑reading it.
 
 Always inspect your downloaded output before sharing.
 

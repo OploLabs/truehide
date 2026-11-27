@@ -1,4 +1,4 @@
-const CACHE = "truehide-v8";
+const CACHE = "truehide-v9";
 
 const BASE = new URL("./", self.location.href);
 
@@ -33,6 +33,10 @@ const SHELL = [
   "./app/truecrop/index.html",
   "./app/truecrop/style.css",
   "./app/truecrop/script.js",
+
+  "./app/truemetadata/index.html",
+  "./app/truemetadata/style.css",
+  "./app/truemetadata/script.js",
 ];
 
 self.addEventListener("install", (event) => {

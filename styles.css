@@ -328,6 +328,59 @@ main {
   background: #17191f !important;
 }
 
+/* mock: metadata tag list with one line struck through */
+.meta-visual {
+  padding: 0;
+}
+
+.mock-meta {
+  width: 128px;
+  height: 96px;
+  padding: 11px 12px;
+  background: #ffffff;
+  border-radius: 5px;
+  box-shadow: 0 10px 24px rgba(20, 30, 50, 0.16);
+  transform: rotate(-4deg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+}
+
+[data-theme="dark"] .mock-meta {
+  background: #f2f3f6;
+}
+
+.mock-meta i {
+  height: 4px;
+  border-radius: 3px;
+  background: #d9dbe3;
+}
+
+.mock-meta i:nth-child(1) {
+  width: 92%;
+}
+
+.mock-meta i:nth-child(2) {
+  width: 70%;
+}
+
+.mock-meta-gone {
+  width: 84% !important;
+  position: relative;
+}
+
+.mock-meta-gone::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  border-radius: 1px;
+  background: #cf3a44;
+}
+
 /* mock: crop frame */
 .mock-crop {
   position: relative;

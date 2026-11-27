@@ -43,6 +43,7 @@
           <a href="../app/trueflatten/">TrueFlatten</a>
           <a href="../app/trueblur/">TrueBlur</a>
           <a href="../app/truecrop/">TrueCrop</a>
+          <a href="../app/truemetadata/">TrueMetadata</a>
         </div>
 
         <button
@@ -124,6 +125,7 @@
           <li><strong>TrueFlatten</code>: the whole PDF is kept in an <code>ArrayBuffer</code> in memory; <code>pdfDocument</code> is not explicitly destroyed on re-open. <em>Fix: add <code>pdfDocument.destroy()</code> when a new PDF is loaded.</em></li>
           <li><strong>TrueBlur</code>: canvas object URLs are revoked after image decode and on <code>beforeunload</code> (<code>currentObjectURL</code>).</li>
           <li><strong>TrueCrop</code>: object URLs are revoked in a <code>finally</code> block after export.</li>
+          <li><strong>TrueMetadata</code>: the image thumbnail object URL is revoked on reset and when a new file replaces it; cleaned-export blob URLs are revoked after download.</li>
         </ul>
       </section>
 
