@@ -184,8 +184,14 @@
      It is fetched and injected into the [data-shared-footer] placeholder,
      with internal links prefixed for this page's depth. */
 
-  const isAppPage = document.baseURI.includes("/app/");
-  const rootPrefix = isAppPage ? "../../" : "./";
+  const baseURI = document.baseURI;
+  const isAppPage = baseURI.includes("/app/");
+  // /docs/privacy-audit.html sits one level below the root;
+  // /docs/security/ (section index) sits two levels below it.
+  const inDocsSection = baseURI.includes("/docs/security/");
+  const isDocsPage = baseURI.includes("/docs/");
+  const rootPrefix = isAppPage || inDocsSection ? "../../" : isDocsPage ? "../" : "./";
+  const anchorPrefix = rootPrefix === "./" ? "" : rootPrefix;
 
   function injectFooter(html) {
     const placeholder = document.querySelector("[data-shared-footer]");
@@ -202,9 +208,9 @@
       if (!href || /^(?:https?:|\/\/|mailto:|tel:)/i.test(href)) return;
 
       if (href[0] === "#") {
-        // Page-local anchors stay on this page; on app pages the #privacy
-        // anchor lives on the homepage.
-        anchor.setAttribute("href", (isAppPage ? "../../" : "") + href);
+        // Page-local anchors stay on this page; on app/docs pages the
+        // #privacy anchor lives on the homepage.
+        anchor.setAttribute("href", anchorPrefix + href);
       } else {
         anchor.setAttribute("href", rootPrefix + href);
       }
@@ -234,7 +240,7 @@
   }
 
   if ("serviceWorker" in navigator && !location.protocol.startsWith("file:")) {
-    const swPath = document.baseURI.includes("/app/") ? "../../sw.js" : "sw.js";
+    const swPath = isAppPage || inDocsSection ? "../../sw.js" : isDocsPage ? "../sw.js" : "sw.js";
     navigator.serviceWorker.register(swPath).catch(() => {
       /* offline support unavailable; the site still works online */
     });

@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f4f5f8" />
+    <title>TrueHide — Privacy audit</title>
+
+    <link rel="stylesheet" href="../shared/base.css" />
+  </head>
+
+  <body>
+    <header class="app-header">
+      <nav class="island" id="island" aria-label="Primary">
+        <a href="../" class="brand">
+          <span class="brand-icon" aria-hidden="true"></span>
+          <span>TrueHide</span>
+        </a>
+
+        <button
+          class="island-toggle"
+          id="islandToggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="islandMenu"
+          aria-label="Menu"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M4 7h16M4 12h16M4 17h16"></path>
+          </svg>
+        </button>
+
+        <div class="island-menu" id="islandMenu">
+          <a href="../">Home</a>
+          <a href="../app/trueflatten/">TrueFlatten</a>
+          <a href="../app/trueblur/">TrueBlur</a>
+          <a href="../app/truecrop/">TrueCrop</a>
+        </div>
+
+        <button
+          class="theme-toggle"
+          id="themeToggle"
+          aria-label="Toggle theme"
+          type="button"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="4"></circle>
+            <path
+              d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"
+            ></path>
+          </svg>
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <h1>TrueHide — Privacy audit</h1>
+
+      <section id="network-requests">
+        <h2>Network requests</h2>
+
+        <p>The only external network request that occurs in the shipped site is:</p>
+
+        <pre>
+  @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+</pre>
+
+        <p>This was the sole Google Fonts <code>@import</code> in <code>shared/base.css</code>. As of this audit it is replaced with a self-hosted variable font <code>fonts/inter-latin.woff2</code>. The site now makes zero external network requests while processing user files.</p>
+
+        <p>All other requests are same-origin:</p>
+
+        <ul>
+          <li><code>fetch(shared/footer.html)</code> in <code>shared/base.js</code> — fetches the canonical footer from the site root; guarded against cross-origin.</li>
+          <li>Service Worker <code>fetch(event.request)</code> in <code>sw.js</code> — only handles same-origin GET requests (<code>url.origin !== self.location.origin</code> returns early); user files are never sent off-device.</li>
+        </ul>
+
+        <p>Since there are no analytics, telemetry, or advertising scripts, no user data leaves the device.</p>
+      </section>
+
+      <section id="dependencies">
+        <h2>Third‑party dependencies</h2>
+
+        <p>All processing libraries are vendored locally and never loaded from a CDN:</p>
+
+        <ul>
+          <li><strong>pdf.js 3.11.174</strong> — vendored at <code>app/trueflatten/lib/pdf.min.js</code> and <code>pdf.worker.min.js</code>. Used only by TrueFlatten for PDF rasterization and re-export verification.</li>
+          <li><strong>jsPDF 2.5.1</strong> — vendored at <code>app/trueflatten/lib/jspdf.umd.min.js</code>. Generates the output PDF; its own metadata (producer, creator) is written into the exported file, but source PDF metadata cannot leak because the output is built from a rasterized canvas.</li>
+        </ul>
+
+        <p>No other external scripts, frameworks (React, Vue, etc.), or build tools are used. The site is pure HTML / CSS / vanilla JavaScript.</p>
+      </section>
+
+      <section id="local-storage">
+        <h2>Local storage</h2>
+
+        <p>The only key persisted in <code>localStorage</code> is:</p>
+
+        <pre>
+  truehide-theme
+</pre>
+
+        <p>It stores the user's colour‑scheme preference (<code>light</code> or <code>dark</code>). No file contents, no IDs, no tracking tokens.</p>
+      </section>
+
+      <section id="temp-resources">
+        <h2>Temporary / in‑memory resources</h2>
+
+        <ul>
+          <li><strong>TrueFlatten</code>: the whole PDF is kept in an <code>ArrayBuffer</code> in memory; <code>pdfDocument</code> is not explicitly destroyed on re-open. <em>Fix: add <code>pdfDocument.destroy()</code> when a new PDF is loaded.</em></li>
+          <li><strong>TrueBlur</code>: canvas object URLs are revoked after image decode and on <code>beforeunload</code> (<code>currentObjectURL</code>).</li>
+          <li><strong>TrueCrop</code>: object URLs are revoked in a <code>finally</code> block after export.</li>
+        </ul>
+      </section>
+
+      <section id="redaction-verification">
+        <h2>PDF export verification</h2>
+
+        <p>The exported PDF is built entirely from rasterized page renders. The source PDF's text, annotations, form fields, embedded files, and metadata are not included in the output because jsPDF reconstructs the PDF from the drawn image. However:</p>
+
+        <ul>
+          <li>The jsPDF library embeds its own XMP metadata (producer, creator, etc.) into the export. This is app‑level metadata, not user data, but it means the export is not a "clean" source‑preserving PDF.</li>
+          <li>No embedded-file or annotation detection/warning is shown during export. The plan adds a pre‑export warning list (annotations, AcroForm fields, embedded files) and a post‑export verification step that re‑opens the exported PDF with pdf.js, extracts text from every page, and reports whether any recoverable text exists.</li>
+          <li>Users are warned that "complete sanitization is not guaranteed" because rasterization irreversibly removes vector data but may leave hidden text in certain PDF production contexts.</li>
+        </ul>
+      </section>
+
+      <section id="threat-model">
+        <h2>Threat model & limits</h2>
+
+        <p>TrueHide's security claim is: <strong>all file processing happens entirely in the browser</strong>. The documented limits are:</p>
+
+        <ul>
+          <li>Any data that is already rasterized or rendered as an image cannot be "un‑redacted" — the redaction is permanent at the pixel level.</li>
+          <li>PDF metadata (title, author, producer, creator) that jsPDF writes into the export is app‑level, not user data, but it means the output is not a "zero‑metadata" PDF.</li>
+          <li>Google Fonts @import was the only formerly external request; it has been self‑hosted.</li>
+          <li>Canvas‑based effects (TrueBlur pixelate/blocks/solid) are visual obfuscation only; they do not permanently remove original pixel data.</li>
+          <li>No network sandbox or OS-level sandboxing is relied upon — the site works over <code>http(s)</code> and also degrades gracefully on <code>file://</code> (offline/without service worker).</li>
+        </ul>
+      </section>
+
+      <section id="disclosure">
+        <h2>Vulnerability disclosure</h2>
+
+        <p>If you discover a security or privacy issue in TrueHide, please report it responsibly by opening an issue on the GitHub repository (<a href="https://github.com/OploLabs/truehide/issues/new">github.com/OploLabs/truehide/issues/new</a>). All reports are acknowledged within 48 hours. The project follows a coordinated disclosure policy: the maintainers will work with the reporter to understand the issue, assess impact, and publish a fix. There is currently no bug‑bounty program.</p>
+      </section>
+    </main>
+
+    <footer class="site-footer site-footer--full" data-shared-footer></footer>
+
+    <script defer src="../shared/base.js"></script>
+  </body>
+</html>

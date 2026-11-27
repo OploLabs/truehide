@@ -28,9 +28,11 @@ const cropButton = $("cropButton");
 const formatSelect = $("format");
 const filenameInput = $("exportFilename");
 
-/* ========================================
+const dropOverlay = $("dropOverlay");
+
+ /* ========================================
    STATE
-======================================== */
+   ======================================== */
 
 let originalImage = null;
 let originalFileName = "image";
@@ -42,9 +44,14 @@ let previewSelection = null;
 let interaction = null;
 let pointerId = null;
 
+// Undo / redo stacks: each entry is the full canvas image data.
+let undoStack = [];
+let redoStack = [];
+const CROP_UNDO_LIMIT = 20;
+
 /* ========================================
    UTILITIES
-======================================== */
+   ======================================== */
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -71,7 +78,6 @@ function normalizeRect(a, b) {
 function constrainRect(rect) {
   const x = clamp(rect.x, 0, imageCanvas.width);
   const y = clamp(rect.y, 0, imageCanvas.height);
-
   return {
     x,
     y,
@@ -99,15 +105,31 @@ function updateDimensions(rect = selection) {
   const height = Math.round(rect.height);
 
   dimensionsElement.textContent = `${width.toLocaleString()} × ${height.toLocaleString()} px`;
-
   outputDimensionsElement.textContent = `${width.toLocaleString()} × ${height.toLocaleString()} px`;
-
   cropButton.disabled = false;
+}
+
+// Show a transient status message (e.g. "Undo applied") in the
+// instructions line plus a toast; reverts to the default hint after a while.
+
+const DEFAULT_INSTRUCTION = "Drag to create a selection. Move or resize it afterward.";
+let statusTimer = null;
+
+function setStatus(message) {
+  const el = $("instructionText");
+  toast(message);
+  if (!el) return;
+  clearTimeout(statusTimer);
+  el.textContent = message;
+  statusTimer = setTimeout(() => {
+    el.textContent = DEFAULT_INSTRUCTION;
+    statusTimer = null;
+  }, 3000);
 }
 
 /* ========================================
    IMAGE LOADING
-======================================== */
+   ======================================== */
 
 function loadImage(file) {
   if (!file) return;
@@ -131,30 +153,21 @@ function loadImage(file) {
 
       imageCanvas.width = image.naturalWidth;
       imageCanvas.height = image.naturalHeight;
-
       selectionCanvas.width = image.naturalWidth;
       selectionCanvas.height = image.naturalHeight;
-
       imageContext.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
-
       imageContext.drawImage(image, 0, 0);
-
       imageLoaded = true;
       selection = null;
       previewSelection = null;
 
       clearInteraction();
-
       emptyState.classList.add("hidden");
       stage.classList.remove("hidden");
-
       sourceDimensionsElement.textContent = `${image.naturalWidth.toLocaleString()} × ${image.naturalHeight.toLocaleString()}`;
-
       setControls(true);
       drawSelection();
-
       imageInput.value = "";
-
       toast("Image loaded successfully.", "success");
     } catch (error) {
       console.error(error);
@@ -174,11 +187,10 @@ function loadImage(file) {
 
 /* ========================================
    POINTER COORDINATES
-======================================== */
+   ======================================== */
 
 function pointerPosition(event) {
   const rect = selectionCanvas.getBoundingClientRect();
-
   if (!rect.width || !rect.height) {
     return { x: 0, y: 0 };
   }
@@ -189,7 +201,6 @@ function pointerPosition(event) {
       0,
       imageCanvas.width,
     ),
-
     y: clamp(
       ((event.clientY - rect.top) / rect.height) * imageCanvas.height,
       0,
@@ -207,12 +218,9 @@ function getHitInfo(event) {
   if (!selection) return null;
 
   const rect = selectionCanvas.getBoundingClientRect();
-
   const pos = pointerPosition(event);
-
   const scaleX = imageCanvas.width / rect.width;
   const scaleY = imageCanvas.height / rect.height;
-
   const thresholdX = 10 * scaleX;
   const thresholdY = 10 * scaleY;
 
@@ -247,7 +255,6 @@ function getHitInfo(event) {
   // Edges
 
   const insideY = pos.y >= top - thresholdY && pos.y <= bottom + thresholdY;
-
   const insideX = pos.x >= left - thresholdX && pos.x <= right + thresholdX;
 
   if (nearLeft && insideY) return { type: "w", pos };
@@ -266,7 +273,7 @@ function getHitInfo(event) {
 
 /* ========================================
    CURSORS
-======================================== */
+   ======================================== */
 
 function getCursor(mode) {
   const cursors = {
@@ -287,15 +294,13 @@ function getCursor(mode) {
 
 function updateHoverCursor(event) {
   if (!imageLoaded || interaction) return;
-
   const hit = getHitInfo(event);
-
   selectionCanvas.style.cursor = getCursor(hit ? hit.type : "new");
 }
 
 /* ========================================
    SELECTION DRAWING
-======================================== */
+   ======================================== */
 
 function drawHandles(rect) {
   const bounds = selectionCanvas.getBoundingClientRect();
@@ -318,12 +323,9 @@ function drawHandles(rect) {
 
   for (const [x, y] of points) {
     selectionContext.beginPath();
-
     selectionContext.arc(x, y, radius, 0, Math.PI * 2);
-
     selectionContext.fillStyle = "#ffffff";
     selectionContext.fill();
-
     selectionContext.lineWidth = Math.max(scaleX, scaleY);
     selectionContext.strokeStyle = "#608cff";
     selectionContext.stroke();
@@ -339,7 +341,6 @@ function drawSelection() {
   );
 
   const rect = previewSelection || selection;
-
   if (!rect || rect.width < 1 || rect.height < 1) {
     updateDimensions(null);
     return;
@@ -348,7 +349,6 @@ function drawSelection() {
   // Darken the area outside the selection.
 
   selectionContext.fillStyle = "rgba(0, 0, 0, 0.53)";
-
   selectionContext.fillRect(
     0,
     0,
@@ -363,41 +363,35 @@ function drawSelection() {
   // Outer border.
 
   selectionContext.save();
-
   selectionContext.strokeStyle = "#ffffff";
   selectionContext.lineWidth = Math.max(1, imageCanvas.width / 1200);
-
   selectionContext.setLineDash([
     Math.max(3, imageCanvas.width / 350),
     Math.max(2, imageCanvas.width / 500),
   ]);
-
   selectionContext.strokeRect(rect.x, rect.y, rect.width, rect.height);
-
   selectionContext.restore();
 
   drawHandles(rect);
-
   updateDimensions(rect);
 }
 
 /* ========================================
    RESIZING
-======================================== */
+   ======================================== */
 
 function resizeSelection(start, handle, pointer) {
   const left = start.x;
   const top = start.y;
-
   const right = start.x + start.width;
   const bottom = start.y + start.height;
+
+  const minSize = 2;
 
   let x1 = left;
   let y1 = top;
   let x2 = right;
   let y2 = bottom;
-
-  const minSize = 2;
 
   if (handle.includes("w")) {
     x1 = clamp(pointer.x, 0, right - minSize);
@@ -416,19 +410,17 @@ function resizeSelection(start, handle, pointer) {
   }
 
   return {
-    x: x1,
-    y: y1,
-    width: x2 - x1,
-    height: y2 - y1,
+    x: Math.round(x1),
+    y: Math.round(y1),
+    width: Math.max(minSize, Math.round(x2 - x1)),
+    height: Math.max(minSize, Math.round(y2 - y1)),
   };
 }
 
 function moveSelection(start, delta) {
   return {
     x: clamp(start.x + delta.x, 0, imageCanvas.width - start.width),
-
     y: clamp(start.y + delta.y, 0, imageCanvas.height - start.height),
-
     width: start.width,
     height: start.height,
   };
@@ -436,7 +428,7 @@ function moveSelection(start, delta) {
 
 /* ========================================
    INTERACTION STATE
-======================================== */
+   ======================================== */
 
 function clearInteraction() {
   interaction = null;
@@ -446,12 +438,9 @@ function clearInteraction() {
 
 function startInteraction(event) {
   if (!imageLoaded || event.button !== 0 || interaction) return;
-
   const pointer = pointerPosition(event);
   const hit = getHitInfo(event);
-
   const mode = hit ? hit.type : "new";
-
   interaction = {
     mode,
     start: pointer,
@@ -473,23 +462,16 @@ function startInteraction(event) {
   }
 
   selectionCanvas.setPointerCapture(event.pointerId);
-
   selectionCanvas.style.cursor = getCursor(mode);
-
   selectionCanvas.classList.add("dragging");
-
   drawSelection();
-
   event.preventDefault();
 }
 
 function updateInteraction(event) {
   if (!interaction || event.pointerId !== pointerId) return;
-
   const pointer = pointerPosition(event);
-
   const { mode, start, original } = interaction;
-
   if (mode === "new") {
     previewSelection = constrainRect(normalizeRect(start, pointer));
   } else if (mode === "move" && original) {
@@ -500,16 +482,13 @@ function updateInteraction(event) {
   } else if (original) {
     previewSelection = resizeSelection(original, mode, pointer);
   }
-
   drawSelection();
 }
 
 function finishInteraction(event) {
   if (!interaction) return;
   if (event && event.pointerId !== pointerId) return;
-
   const finalSelection = cloneRect(previewSelection);
-
   if (
     finalSelection &&
     finalSelection.width >= 2 &&
@@ -521,9 +500,7 @@ function finishInteraction(event) {
   }
 
   const capturedPointer = pointerId;
-
   clearInteraction();
-
   selectionCanvas.classList.remove("dragging");
   selectionCanvas.style.cursor = "crosshair";
 
@@ -539,15 +516,11 @@ function finishInteraction(event) {
 
 function cancelInteraction(event) {
   if (!interaction) return;
-
   selection = cloneRect(interaction.original);
-
   const capturedPointer = pointerId;
 
   clearInteraction();
-
   selectionCanvas.classList.remove("dragging");
-
   if (
     capturedPointer !== null &&
     selectionCanvas.hasPointerCapture(capturedPointer)
@@ -560,10 +533,9 @@ function cancelInteraction(event) {
 
 /* ========================================
    POINTER EVENTS
-======================================== */
+   ======================================== */
 
 selectionCanvas.addEventListener("pointerdown", startInteraction);
-
 selectionCanvas.addEventListener("pointermove", (event) => {
   if (interaction) {
     updateInteraction(event);
@@ -571,11 +543,8 @@ selectionCanvas.addEventListener("pointermove", (event) => {
     updateHoverCursor(event);
   }
 });
-
 selectionCanvas.addEventListener("pointerup", finishInteraction);
-
 selectionCanvas.addEventListener("pointercancel", cancelInteraction);
-
 selectionCanvas.addEventListener("lostpointercapture", () => {
   if (interaction) {
     selection = cloneRect(interaction.original);
@@ -586,30 +555,22 @@ selectionCanvas.addEventListener("lostpointercapture", () => {
 
 /* ========================================
    SELECTION CONTROLS
-======================================== */
+   ======================================== */
 
 function clearSelection() {
   if (!imageLoaded) return;
-
   selection = null;
   clearInteraction();
-
   selectionCanvas.style.cursor = "crosshair";
-
   drawSelection();
-
   toast("Selection cleared.");
 }
 
 function resetImage() {
   if (!originalImage) return;
-
   imageContext.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
-
   imageContext.drawImage(originalImage, 0, 0);
-
   clearSelection();
-
   toast("Image reset.");
 }
 
@@ -618,7 +579,7 @@ clearButton.addEventListener("click", clearSelection);
 
 /* ========================================
    CROP AND EXPORT
-======================================== */
+   ======================================== */
 
 const CROP_BUTTON_HTML = `
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -626,7 +587,7 @@ const CROP_BUTTON_HTML = `
     <path d="M12 3v12m-5-5 5 5 5-5"></path>
     <path d="M5 17v4h14v-4"></path>
   </svg>
-  Crop &amp; Download
+  Crop & Download
 `;
 
 function cropImage() {
@@ -644,13 +605,33 @@ function cropImage() {
 
   if (rect.width < 1 || rect.height < 1) return;
 
-  const outputCanvas = document.createElement("canvas");
+  // --- UNDO: snapshot current canvas state ---
+  try {
+    const idata = imageContext.getImageData(
+      0,
+      0,
+      imageCanvas.width,
+      imageCanvas.height,
+    );
+    undoStack.push(idata);
+    if (undoStack.length > CROP_UNDO_LIMIT) undoStack.shift();
+    redoStack.length = 0; // new action clears redo
+    $("undoButton").disabled = false;
+    if (typeof window.TrueHide !== "undefined") {
+      // ensure the redo button is visible/enabled if the UI has it
+      const rb = document.getElementById("redoButton");
+      if (rb) { rb.disabled = false; rb.style.display = "inline-block"; }
+    }
+  } catch (e) {
+    console.warn("cropImage undo snapshot failed", e);
+  }
+  // -------------------------------------------
 
+  const outputCanvas = document.createElement("canvas");
   outputCanvas.width = rect.width;
   outputCanvas.height = rect.height;
 
   const outputContext = outputCanvas.getContext("2d");
-
   if (!outputContext) {
     toast("Could not create the output image.", "error");
     return;
@@ -662,7 +643,6 @@ function cropImage() {
 
   if (format === "image/jpeg") {
     outputContext.fillStyle = "#ffffff";
-
     outputContext.fillRect(0, 0, rect.width, rect.height);
   }
 
@@ -706,12 +686,10 @@ function cropImage() {
       // Custom filename from the toolbar; defaults to "<name>-cropped".
 
       const base = filenameInput.value.trim() || `${originalFileName}-cropped`;
-
       const filename = `${base}.${extension}`;
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-
       link.href = url;
       link.download = filename;
 
@@ -720,7 +698,6 @@ function cropImage() {
       link.remove();
 
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-
       toast(`Exported ${rect.width} × ${rect.height} image.`, "success");
     },
     format,
@@ -731,8 +708,86 @@ function cropImage() {
 cropButton.addEventListener("click", cropImage);
 
 /* ========================================
+   UNDO / REDO
+   ======================================== */
+
+function undoImage() {
+  if (!undoStack.length || !imageLoaded) return;
+
+  const previous = undoStack.pop();
+
+  // Save current state to redo stack
+  try {
+    const current = imageContext.getImageData(
+      0,
+      0,
+      imageCanvas.width,
+      imageCanvas.height,
+    );
+    redoStack.push(current);
+    if (redoStack.length > CROP_UNDO_LIMIT) redoStack.shift();
+  } catch (e) {
+    console.warn("undoImage redo capture failed", e);
+  }
+
+  try {
+    imageContext.putImageData(previous, 0, 0);
+  } catch (e) {
+    console.warn("undoImage putImageData failed", e);
+  }
+
+  $("undoButton").disabled = undoStack.length === 0;
+
+  // Enable redo button if there's something to redo
+  const rb = $("redoButton");
+  if (rb) { rb.disabled = redoStack.length === 0; }
+
+  drawSelection();
+  setStatus("Undo applied");
+  setControls(true);
+}
+
+function redoImage() {
+  if (!redoStack.length || !imageLoaded) return;
+
+  const next = redoStack.pop();
+
+  // Save current state to undo stack
+  try {
+    const current = imageContext.getImageData(
+      0,
+      0,
+      imageCanvas.width,
+      imageCanvas.height,
+    );
+    undoStack.push(current);
+    if (undoStack.length > CROP_UNDO_LIMIT) undoStack.shift();
+  } catch (e) {
+    console.warn("redoImage undo capture failed", e);
+  }
+
+  try {
+    imageContext.putImageData(next, 0, 0);
+  } catch (e) {
+    console.warn("redoImage putImageData failed", e);
+  }
+
+  $("undoButton").disabled = undoStack.length === 0;
+
+  const rb = $("redoButton");
+  if (rb) { rb.disabled = redoStack.length === 0; }
+
+  drawSelection();
+  setStatus("Redo applied");
+  setControls(true);
+}
+
+$("undoButton").addEventListener("click", undoImage);
+$("redoButton").addEventListener("click", redoImage);
+
+/* ========================================
    FILE INPUT
-======================================== */
+   ======================================== */
 
 imageInput.addEventListener("change", () => {
   loadImage(imageInput.files?.[0]);
@@ -740,7 +795,7 @@ imageInput.addEventListener("change", () => {
 
 /* ========================================
    KEYBOARD SHORTCUTS
-======================================== */
+   ======================================== */
 
 document.addEventListener("keydown", (event) => {
   const target = event.target;
@@ -769,11 +824,23 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && selection && !cropButton.disabled) {
     cropImage();
   }
+
+  // Undo: Ctrl+/Cmd+Z
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+    event.preventDefault();
+    undoImage();
+  }
+
+  // Redo: Ctrl+/Cmd+Shift+Z or Ctrl+/Cmd+Y
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") {
+    event.preventDefault();
+    redoImage();
+  }
 });
 
 /* ========================================
    DRAG AND DROP (shared)
-======================================== */
+   ======================================== */
 
 window.TrueHide.attachFileDrop({
   accept: (file) => file.type.startsWith("image/"),
@@ -783,7 +850,7 @@ window.TrueHide.attachFileDrop({
 
 /* ========================================
    INITIALIZATION
-======================================== */
+   ======================================== */
 
 setControls(false);
 

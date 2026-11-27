@@ -1,6 +1,4 @@
-console.log("[TrueHide SW] Loaded from:", self.location.href);
-console.log("[TrueHide SW] Base directory:", new URL("./", self.location.href));
-const CACHE = "truehide-v5";
+const CACHE = "truehide-v7";
 
 const BASE = new URL("./", self.location.href);
 
@@ -12,9 +10,14 @@ const SHELL = [
   "./manifest.json",
   "./shared/base.css",
   "./shared/base.js",
+  "./shared/dialog.js",
+  "./shared/shortcuts.js",
   "./shared/footer.html",
   "./icons/icon-192.svg",
   "./icons/icon-512.svg",
+  "./fonts/inter-latin.woff2",
+  "./docs/privacy-audit.html",
+  "./docs/security/index.html",
 
   "./app/trueflatten/index.html",
   "./app/trueflatten/style.css",
@@ -89,6 +92,19 @@ self.addEventListener("fetch", (event) => {
         return response;
       } catch (error) {
         if (event.request.mode === "navigate") {
+          const requested = new URL(event.request.url);
+
+          // Offline navigation to an app directory (e.g. /app/truecrop/)
+          // should serve that app's cached entry page, not the landing page.
+          if (requested.pathname.startsWith("/app/")) {
+            const appIndex = new URL(
+              requested.pathname.replace(/\/?$/, "/") + "index.html",
+              requested.origin,
+            );
+            const appCached = await caches.match(appIndex);
+            if (appCached) return appCached;
+          }
+
           return (
             (await caches.match(new URL("./index.html", BASE))) ||
             Response.error()

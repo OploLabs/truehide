@@ -19,6 +19,8 @@
     <link rel="apple-touch-icon" href="../../icons/icon-192.svg" />
 
     <script defer src="../../shared/base.js"></script>
+    <script defer src="../../shared/dialog.js"></script>
+    <script defer src="../../shared/shortcuts.js"></script>
     <script defer src="script.js"></script>
   </head>
 
@@ -103,6 +105,10 @@
             ↶ Undo
           </button>
 
+          <button class="button" id="redoButton" disabled type="button">
+            ↷ Redo
+          </button>
+
           <button class="button" id="resetButton" disabled type="button">
             Reset
           </button>
@@ -122,8 +128,8 @@
           </div>
 
           <div class="stage hidden" id="stage">
-            <canvas id="imageCanvas"></canvas>
-            <canvas id="selectionCanvas"></canvas>
+            <canvas id="imageCanvas" role="img" aria-label="Source image"></canvas>
+            <canvas id="selectionCanvas" aria-hidden="true"></canvas>
           </div>
         </div>
 
@@ -267,6 +273,7 @@
               class="filename-input"
               placeholder="trueblur.png"
               maxlength="120"
+              aria-label="Export filename"
             />
             <button class="button" id="clearSelection" disabled type="button">
               Clear selection

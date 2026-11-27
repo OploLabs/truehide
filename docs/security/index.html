@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f4f5f8" />
+    <title>TrueHide — Security & privacy</title>
+
+    <link rel="stylesheet" href="../../shared/base.css" />
+  </head>
+
+  <body>
+    <header class="app-header">
+      <nav class="island" id="island" aria-label="Primary">
+        <a href="../../" class="brand">
+          <span class="brand-icon" aria-hidden="true"></span>
+          <span>TrueHide</span>
+        </a>
+
+        <button
+          class="island-toggle"
+          id="islandToggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="islandMenu"
+          aria-label="Menu"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M4 7h16M4 12h16M4 17h16"></path>
+          </svg>
+        </button>
+
+        <div class="island-menu" id="islandMenu">
+          <a href="../../">Home</a>
+          <a href="../../app/trueflatten/">TrueFlatten</a>
+          <a href="../../app/trueblur/">TrueBlur</a>
+          <a href="../../app/truecrop/">TrueCrop</a>
+        </div>
+
+        <button
+          class="theme-toggle"
+          id="themeToggle"
+          aria-label="Toggle theme"
+          type="button"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="4"></circle>
+            <path
+              d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"
+            ></path>
+          </svg>
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <h1>TrueHide — Security & privacy</h1>
+
+      <section id="core-claim">
+        <h2>Core claim</h2>
+
+        <p>Every file you open in TrueFlatten, TrueBlur, or TrueCrop is processed
+        entirely in your browser. No file contents are uploaded, sent to a server,
+        or stored anywhere permanent.</p>
+      </section>
+
+      <section id="what-we-handle">
+        <h2>What we handle (and how)</h2>
+
+        <dl>
+          <dt>PDFs (TrueFlatten)</dt>
+          <dd>Rasterized at 2× scale; redaction boxes are black rectangles drawn on the canvas. Source text, annotations, form fields, and embedded files are <em>not</em> included in the exported PDF because jsPDF rebuilds the file from the rendered image. jsPDF adds its own XMP metadata (producer/creator).</dd>
+
+          <dt>Images (TrueBlur)</dt>
+          <dd>Canvas‑based effects (pixelate, blocks, solid black, FalsePixel, paint). All rendering stays on‑device. The "solid black" and "block" modes produce irreversible redaction; pixelate and FalsePixel are visual obfuscation only.</dd>
+
+          <dt>Images (TrueCrop)</dt>
+          <dd>Canvas crop + PNG/JPEG/WebP export. The export preserves or discards alpha per the chosen format. JPEG fills transparent areas with white.</dd>
+        </dl>
+      </section>
+
+      <section id="what-we-do-not-send">
+        <h2>What we never send off‑device</h2>
+
+        <ul>
+          <li>Raw file bytes or disk paths</li>
+          <li>Any user‑identifying information</li>
+          <li>Usage analytics, telemetry, or crash reports</li>
+          <li>Data to any CDN or third‑party service</li>
+        </ul>
+      </section>
+
+      <section id="known-external-request">
+        <h2>Former external request — now self‑hosted</h2>
+
+        <p>The site formerly loaded Inter from Google Fonts (<code>@import</code> in
+        <code>shared/base.css</code>). It is now self‑hosted at <code>fonts/inter-latin.woff2</code>. No network request leaves the device.</p>
+      </section>
+
+      <section id="local-storage">
+        <h2>Local storage</h2>
+
+        <p>The only data persisted in <code>localStorage</code> is the user's
+        colour‑scheme preference (<code>truehide-theme</code>), stored as
+        <code>"light"</code> or <code>"dark"</code>. No file contents, no IDs.</p>
+      </section>
+
+      <section id="redaction-limitations">
+        <h2>Redaction limitations</h2>
+
+        <ul>
+          <li><strong>Canvas effects</strong> (TrueBlur pixelate/blocks/FalsePixel/paint): visual obfuscation only — the original pixel data remains on the canvas until overwritten.</li>
+          <li><strong>TrueFlatten PDF redaction</strong>: permanent at the pixel level because the output is a fresh rasterized PDF, but source annotations, AcroForm fields, and embedded files are stripped by the rasterization process; the output still carries jsPDF‑generated XMP metadata.</li>
+          <li><strong>TrueCrop JPEG export</strong>: transparency is lost — the background fills with white.</li>
+        </ul>
+      </section>
+
+      <section id="disclosure">
+        <h2>Vulnerability disclosure</h2>
+
+        <p>Report security or privacy issues by opening an issue on the GitHub
+        repository (<a href="https://github.com/OploLabs/truehide/issues/new">github.com/OploLabs/truehide/issues/new</a>).
+        Reports are acknowledged within 48 hours. The project follows a coordinated
+        disclosure policy; there is no bug‑bounty program at this time.</p>
+      </section>
+    </main>
+
+    <footer class="site-footer site-footer--full" data-shared-footer></footer>
+
+    <script defer src="../../shared/base.js"></script>
+  </body>
+</html>

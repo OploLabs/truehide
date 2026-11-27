@@ -25,6 +25,7 @@ let resizeHandle = null;
 let selectionBeforeDrag = null;
 
 let undoStack = [];
+let redoStack = [];
 let currentObjectURL = null;
 let loadSequence = 0;
 let originalImageName = "trueblur";
@@ -892,11 +893,50 @@ function saveUndo() {
     undoStack.shift();
   }
 
+  // A new action invalidates the redo history.
+  redoStack.length = 0;
+  $("redoButton").disabled = true;
+
   $("undoButton").disabled = false;
+}
+
+function redo() {
+  if (!redoStack.length || !imageLoaded) return;
+
+  // Keep undo available after redoing.
+  undoStack.push(
+    imageContext.getImageData(0, 0, imageCanvas.width, imageCanvas.height),
+  );
+
+  if (undoStack.length > 20) {
+    undoStack.shift();
+  }
+
+  const next = redoStack.pop();
+
+  imageContext.putImageData(next, 0, 0);
+
+  clearPaintMask();
+
+  $("undoButton").disabled = undoStack.length === 0;
+  $("redoButton").disabled = redoStack.length === 0;
+
+  drawSelection();
+  setStatus("Redo applied");
+  setControls(true);
 }
 
 function undo() {
   if (!undoStack.length || !imageLoaded) return;
+
+  // Keep redo available by saving the current state.
+  redoStack.push(
+    imageContext.getImageData(0, 0, imageCanvas.width, imageCanvas.height),
+  );
+
+  if (redoStack.length > 20) {
+    redoStack.shift();
+  }
 
   const previous = undoStack.pop();
 
@@ -905,6 +945,7 @@ function undo() {
   clearPaintMask();
 
   $("undoButton").disabled = undoStack.length === 0;
+  $("redoButton").disabled = redoStack.length === 0;
 
   drawSelection();
 
@@ -1353,6 +1394,7 @@ $("resetButton").addEventListener("click", resetImage);
 $("clearSelection").addEventListener("click", clearSelection);
 $("downloadButton").addEventListener("click", downloadImage);
 $("undoButton").addEventListener("click", undo);
+$("redoButton").addEventListener("click", redo);
 
 document.addEventListener("keydown", (event) => {
   if (
@@ -1365,6 +1407,11 @@ document.addEventListener("keydown", (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
     event.preventDefault();
     undo();
+  }
+
+  if (event.key === "y" && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    redo();
   }
 
   if (event.key === "Escape") {

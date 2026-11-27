@@ -21,6 +21,12 @@ suite. Plain HTML / CSS / JavaScript only.
   external requests; ideally remove this one in a hardening pass.
 - **Originals are never modified.** Tools work on in-memory copies and hand
   back a downloaded export.
+- **Dev-only tooling exception.** A `package.json` at the repository root is
+  permitted for development tools only (Playwright E2E, node:test unit tests).
+  It must not be published, must not add runtime dependencies to the apps, and
+  must declare `"type": "module"` with scripts scoped to `"dev"` (e.g. `"test"`,
+  `"test:unit"`, `"test:e2e"`). The static apps (`index.html`, `app/*/`) remain
+  framework-/bundler-/CDN-free and run without `package.json` at runtime.
 
 ## Project layout
 

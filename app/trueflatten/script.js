@@ -22,6 +22,11 @@ let dragStart = null;
 let dragCurrent = null;
 let originalPdfName = "trueflatten";
 
+// Undo / redo stacks: each entry = { page, redactionsRemoved }
+let undoStack = [];
+let redoStack = [];
+const UNDO_LIMIT = 50;
+
 function getRedactions(page = currentPage) {
   if (!pageRedactions.has(page)) {
     pageRedactions.set(page, []);
@@ -339,82 +344,143 @@ $("clearPage").addEventListener("click", () => {
   renderRedactions();
 });
 
+function escapeHTML(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 async function flattenPDF() {
   if (!pdfDocument) return;
 
-  const button = $("flattenButton");
-  button.disabled = true;
-  button.textContent = "Flattening...";
+  // Snapshot current redaction state for undo
+  const snapshot = {};
+  for (let p = 1; p <= pdfDocument.numPages; p++) {
+    snapshot[p] = pageRedactions.get(p) ? [...pageRedactions.get(p)] : [];
+  }
+  undoStack.push(snapshot);
+  if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+  redoStack.length = 0; // new action clears redo
 
-  try {
+  const filename = $("exportFilename").value.trim() || `${originalPdfName}.pdf`;
+
+  let totalRects = 0;
+  for (let p = 1; p <= pdfDocument.numPages; p++) {
+    const arr = pageRedactions.get(p);
+    if (arr) totalRects += arr.length;
+  }
+
+  // Show export confirmation modal
+  const overlay = window.TrueHide.showModal({
+    title: "Export PDF",
+    content: `
+      <p>This will convert all pages into flattened images (rasterized at 2x scale). The original PDF's selectable text will be permanently removed and replaced by black rectangles. The exported PDF will carry jsPDF metadata (producer/creator).</p>
+      <p><strong>File name:</strong> <input type="text" id="exportFilenameModal" value="${escapeHTML(filename)}" maxlength="120" aria-label="Export file name"></p>
+      <p><strong>Verification:</strong> Each page is rendered as a bitmap at double scale, with black rectangles drawn on top. Any original selectable text is physically absent from the output. The progress below updates while the document is generated.</p>
+      <ul>
+        <li>Pages: <strong id="verifPages">0</strong> / <strong>${pdfDocument.numPages}</strong></li>
+        <li>Redaction rectangles drawn: <strong>${totalRects}</strong></li>
+        <li>Expected extractable text after export: <strong>none</strong></li>
+      </ul>
+    `,
+    buttons: [
+      { label: "Flatten & Download", kind: "primary", id: "flattenConfirm" },
+      { label: "Cancel", kind: "default", id: "cancelButton" },
+    ],
+  });
+
+  const filenameInput = overlay.querySelector("#exportFilenameModal");
+  const cancelButton = overlay.querySelector("#cancelButton");
+  const confirmButton = overlay.querySelector("#flattenConfirm");
+  const verifPages = overlay.querySelector("#verifPages");
+
+  // Generate the rasterized PDF, then trigger the download.
+  async function downloadPDF() {
+    if (!confirmButton || confirmButton.disabled) return;
+    confirmButton.disabled = true;
+    const originalLabel = confirmButton.textContent;
+    confirmButton.textContent = "Flattening…";
+
+    const fname =
+      (filenameInput && filenameInput.value.trim()) ||
+      `${originalPdfName}.pdf`;
+
     const { jsPDF } = window.jspdf;
     let output = null;
 
-    for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber++) {
-      const page = await pdfDocument.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: 2 });
+    try {
+      for (
+        let pageNumber = 1;
+        pageNumber <= pdfDocument.numPages;
+        pageNumber++
+      ) {
+        const page = await pdfDocument.getPage(pageNumber);
+        const viewport = page.getViewport({ scale: 2 });
 
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.ceil(viewport.width);
-      canvas.height = Math.ceil(viewport.height);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
 
-      const pageContext = canvas.getContext("2d", {
-        alpha: false,
-      });
+        const pageContext = canvas.getContext("2d", { alpha: false });
+        pageContext.fillStyle = "#ffffff";
+        pageContext.fillRect(0, 0, canvas.width, canvas.height);
 
-      pageContext.fillStyle = "#ffffff";
-      pageContext.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({
+          canvasContext: pageContext,
+          viewport,
+        }).promise;
 
-      await page.render({
-        canvasContext: pageContext,
-        viewport,
-      }).promise;
+        for (const redaction of pageRedactions.get(pageNumber) || []) {
+          pageContext.fillStyle = "#000000";
+          pageContext.fillRect(
+            redaction.x * canvas.width,
+            redaction.y * canvas.height,
+            redaction.width * canvas.width,
+            redaction.height * canvas.height,
+          );
+        }
 
-      for (const redaction of pageRedactions.get(pageNumber) || []) {
-        pageContext.fillStyle = "#000000";
+        const image = canvas.toDataURL("image/jpeg", 0.94);
+        const width = viewport.width;
+        const height = viewport.height;
 
-        pageContext.fillRect(
-          redaction.x * canvas.width,
-          redaction.y * canvas.height,
-          redaction.width * canvas.width,
-          redaction.height * canvas.height,
-        );
+        if (!output) {
+          output = new jsPDF({
+            orientation: width > height ? "landscape" : "portrait",
+            unit: "pt",
+            format: [width, height],
+            compress: true,
+          });
+        } else {
+          output.addPage(
+            [width, height],
+            width > height ? "landscape" : "portrait",
+          );
+        }
+
+        output.addImage(image, "JPEG", 0, 0, width, height, undefined, "FAST");
+
+        canvas.width = 1;
+        canvas.height = 1;
+
+        if (verifPages) verifPages.textContent = String(pageNumber);
       }
 
-      const image = canvas.toDataURL("image/jpeg", 0.94);
-      const width = viewport.width;
-      const height = viewport.height;
-
-      if (!output) {
-        output = new jsPDF({
-          orientation: width > height ? "landscape" : "portrait",
-          unit: "pt",
-          format: [width, height],
-          compress: true,
-        });
-      } else {
-        output.addPage(
-          [width, height],
-          width > height ? "landscape" : "portrait",
-        );
-      }
-
-      output.addImage(image, "JPEG", 0, 0, width, height, undefined, "FAST");
-
-      canvas.width = 1;
-      canvas.height = 1;
+      window.TrueHide.hideModal();
+      output.save(fname);
+      toast(`PDF downloaded as ${fname}.`, { kind: "success" });
+    } finally {
+      // Re-enable the button if generation failed (modal stays open)
+      confirmButton.disabled = false;
+      confirmButton.textContent = originalLabel;
     }
+  }
 
-    const filename = $("exportFilename").value.trim() || `${originalPdfName}.pdf`;
-    output.save(filename);
-  } catch (error) {
-    console.error(error);
-    toast("Could not flatten the PDF. Try a smaller document.", {
-      kind: "error",
-    });
-  } finally {
-    button.disabled = false;
-    button.textContent = "Flatten & Download";
+  if (cancelButton) {
+    cancelButton.addEventListener("click", () => window.TrueHide.hideModal());
+  }
+  if (confirmButton) {
+    confirmButton.addEventListener("click", downloadPDF);
   }
 }
 

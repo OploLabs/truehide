@@ -122,7 +122,7 @@ main {
   background: rgba(255, 255, 255, 0.14);
 }
 
-.demo-redacted {
+.demo-lines i.demo-redacted {
   position: relative;
   height: 22px;
   border-radius: 4px;
@@ -133,7 +133,7 @@ main {
 }
 
 .demo-redacted span {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.85);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.08em;

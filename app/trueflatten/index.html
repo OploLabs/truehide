@@ -19,6 +19,8 @@
     <script defer src="lib/pdf.min.js"></script>
     <script defer src="lib/jspdf.umd.min.js"></script>
     <script defer src="../../shared/base.js"></script>
+    <script defer src="../../shared/dialog.js"></script>
+    <script defer src="../../shared/shortcuts.js"></script>
     <script defer src="script.js"></script>
   </head>
   <body>
@@ -141,7 +143,7 @@
 
           <div class="pdf-viewer hidden" id="pdfViewer">
             <div class="page-wrapper" id="pageWrapper">
-              <canvas id="pdfCanvas"></canvas>
+              <canvas id="pdfCanvas" role="img" aria-label="PDF page preview"></canvas>
               <div id="redactionLayer"></div>
               <div id="selectionPreview"></div>
             </div>
@@ -161,6 +163,7 @@
               class="filename-input"
               placeholder="trueflatten-redacted.pdf"
               maxlength="120"
+              aria-label="Export filename"
             />
             <button class="button danger" id="flattenButton" disabled>
               Flatten &amp; Download

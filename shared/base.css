@@ -4,7 +4,16 @@
    Loaded by every page before its own stylesheet.
    ============================================================ */
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+/* Self-hosted Inter (latin subset, variable weight 400–800).
+   Fully offline: no external requests. File lives in fonts/ at the site
+   root; url() paths are relative to this stylesheet (shared/). */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("../fonts/inter-latin.woff2") format("woff2");
+}
 
 :root {
   color-scheme: light;
@@ -16,19 +25,19 @@
   --surface-hover: rgba(120, 140, 180, 0.09);
 
   --text: #17191f;
-  --muted: #6b7280;
-  --subtle: #9aa1af;
+  --muted: #4b5563;
+  --subtle: #5c6470;
 
   --border: rgba(20, 25, 35, 0.09);
   --border-strong: rgba(20, 25, 35, 0.18);
 
-  --accent: #5979dc;
+  --accent: #4c68bb;
   --accent-hover: #4a68c6;
   --accent-soft: rgba(90, 135, 245, 0.1);
   --accent-contrast: #ffffff;
 
   --success: #3f9d72;
-  --danger: #d9454f;
+  --danger: #cf3a44;
   --danger-soft: rgba(217, 69, 79, 0.1);
 
   /* Ink for inverted sections (theme-independent) */
@@ -88,7 +97,7 @@
 
   --text: #f3f4f7;
   --muted: #9ba1ae;
-  --subtle: #666e7c;
+  --subtle: #8a92a0;
 
   --border: rgba(255, 255, 255, 0.09);
   --border-strong: rgba(255, 255, 255, 0.18);
@@ -665,6 +674,96 @@ input[type="file"] {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+/* ---------- Modal dialog (shared/dialog.js) ---------- */
+
+.truehide-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 550; /* above drop overlay (500), below toasts (600) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-5);
+  background: rgba(15, 20, 30, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.truehide-modal {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 2 * var(--sp-6));
+  overflow: auto;
+  padding: var(--sp-6);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-lg);
+  color: var(--text);
+  animation: modal-in 0.18s var(--ease);
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.truehide-modal h2 {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.truehide-modal-content p {
+  margin: 0 0 var(--sp-3);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.truehide-modal-content p:last-child {
+  margin-bottom: 0;
+}
+
+.truehide-modal-content ul {
+  margin: 4px 0 0;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.7;
+}
+
+.truehide-modal-content input[type="text"] {
+  width: 100%;
+  padding: 8px 11px;
+  margin: 6px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-solid);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.truehide-modal-content input[type="text"]:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-5);
 }
 
 /* ---------- Notice ---------- */

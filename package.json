@@ -1,0 +1,19 @@
+{
+  "name": "truehide",
+  "private": true,
+  "version": "1.0.0",
+  "description": "TrueHide — privacy-first static web app for redacting documents and images",
+  "type": "module",
+  "scripts": {
+    "test": "npm run test:unit && npm run test:e2e && npm run test:integrity",
+    "test:unit": "node --test test/unit/",
+    "test:e2e": "playwright test",
+    "test:integrity": "node test/integrity/assets.mjs",
+    "test:privacy": "playwright test test/e2e/privacy.spec.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "axe-core": "^4.10.0",
+    "playwright": "^1.48.0"
+  }
+}
