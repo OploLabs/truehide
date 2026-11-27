@@ -5,22 +5,23 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   unit-and-integrity:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: npm
 
-      - name: Install dev dependencies
-        run: npm ci
+      - run: npm ci
 
       - name: Run unit tests
         run: npm run test:unit
@@ -30,33 +31,39 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    timeout-minutes: 15
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: npm
 
-      - name: Install dev dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
-      - name: Run Playwright E2E (Chromium + Firefox)
-        # Runs every spec in test/e2e/: crop export verification,
-        # PDF redaction security (no extractable text), privacy & no-file-leak,
-        # axe-core accessibility, mobile viewports, offline service worker.
-        run: npx playwright test
+      - name: Install browser
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run E2E tests
+        run: npx playwright test --project=${{ matrix.browser }} --workers=2
 
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.browser }}
           path: playwright-report/
-          retention-days: 14
+          retention-days: 7
