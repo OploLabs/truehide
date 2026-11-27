@@ -1261,6 +1261,20 @@ function clearSelection() {
   setControls(true);
 }
 
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function downloadImage() {
   if (!imageLoaded) return;
 
@@ -1270,20 +1284,26 @@ function downloadImage() {
       return;
     }
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    // Prefill the editable base name; the ".png" extension is shown as a
+    // fixed suffix by the shared confirmation dialog.
+    const full = $("exportFilename").value.trim() || `${originalImageName}.png`;
+    const base = full.toLowerCase().endsWith(".png") ? full.slice(0, -4) : full;
 
-    link.href = url;
-    const filename = $("exportFilename").value.trim() || `${originalImageName}.png`;
-    link.download = filename;
-
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-    setStatus("Image downloaded");
+    window.TrueHide.confirmDownload({
+      fileName: base,
+      extension: ".png",
+      details: [
+        { label: "Format", value: "PNG (lossless)" },
+        { label: "Dimensions", value: `${imageCanvas.width} × ${imageCanvas.height}` },
+        { label: "Size", value: window.TrueHide.formatBytes(blob.size) },
+      ],
+      note: "Exports the processed image. Your original file stays untouched.",
+      onConfirm: (name) => {
+        triggerDownload(blob, name);
+        setStatus("Image downloaded");
+        toast(`Image downloaded as ${name}.`, { kind: "success" });
+      },
+    });
   }, "image/png");
 }
 

@@ -1,4 +1,4 @@
-const CACHE = "truehide-v11";
+const CACHE = "truehide-v12";
 
 const BASE = new URL("./", self.location.href);
 
@@ -11,6 +11,7 @@ const SHELL = [
   "./shared/base.css",
   "./shared/base.js",
   "./shared/dialog.js",
+  "./shared/download.js",
   "./shared/shortcuts.js",
   "./shared/footer.html",
   "./icons/icon-192.svg",

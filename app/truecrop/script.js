@@ -590,6 +590,19 @@ const CROP_BUTTON_HTML = `
   Crop & Download
 `;
 
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function cropImage() {
   if (!selection || !imageLoaded) {
     toast("Create a selection first.", "error");
@@ -684,21 +697,38 @@ function cropImage() {
       const extension = extensions[actualFormat] || "png";
 
       // Custom filename from the toolbar; defaults to "<name>-cropped".
+      // Strip a typed image extension so the dialog's fixed suffix does
+      // not produce "photo.png.png".
 
-      const base = filenameInput.value.trim() || `${originalFileName}-cropped`;
-      const filename = `${base}.${extension}`;
+      const full = filenameInput.value.trim() || `${originalFileName}-cropped`;
+      const base = full.replace(/\.(png|jpe?g|webp)$/i, "");
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      toast(`Exported ${rect.width} × ${rect.height} image.`, "success");
+      window.TrueHide.confirmDownload({
+        fileName: base,
+        extension: `.${extension}`,
+        details: [
+          {
+            label: "Format",
+            value:
+              extension.toUpperCase() +
+              (actualFormat === "image/jpeg" ? " · quality 95%" : ""),
+          },
+          { label: "Crop size", value: `${rect.width} × ${rect.height}` },
+          {
+            label: "Source image",
+            value: `${imageCanvas.width} × ${imageCanvas.height}`,
+          },
+          { label: "Size", value: window.TrueHide.formatBytes(blob.size) },
+        ],
+        note: "The crop is exported from an in-memory copy. Your original file stays untouched.",
+        onConfirm: (name) => {
+          triggerDownload(blob, name);
+          toast(
+            `Exported ${rect.width} × ${rect.height} ${extension.toUpperCase()} image.`,
+            "success",
+          );
+        },
+      });
     },
     format,
     format === "image/jpeg" ? 0.95 : undefined,

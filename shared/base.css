@@ -766,6 +766,94 @@ input[type="file"] {
   margin-top: var(--sp-5);
 }
 
+/* ---------- Download confirmation (shared/download.js) ---------- */
+
+.dl-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--subtle);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.dl-filename {
+  display: flex;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-4);
+}
+
+.dl-filename input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.dl-ext {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-solid);
+  color: var(--subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.dl-details {
+  margin: 0;
+}
+
+.dl-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.dl-row:last-child {
+  border-bottom: 0;
+}
+
+.dl-row dt {
+  color: var(--subtle);
+  font-size: var(--text-sm);
+}
+
+.dl-row dd {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  text-align: right;
+}
+
+.truehide-modal-content .dl-note {
+  display: flex;
+  gap: 9px;
+  margin: var(--sp-3) 0 0;
+  padding: 11px 13px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: 1.55;
+}
+
+.truehide-modal-content .dl-note::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-top: 4px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--success);
+}
+
 /* ---------- Notice ---------- */
 
 .notice {

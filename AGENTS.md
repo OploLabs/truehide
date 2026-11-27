@@ -93,7 +93,7 @@ Tool facts:
 - **Nav sync:** the island nav header is also duplicated per page; mark the
   current page's link with `class="active"`.
 - **Service worker:** `sw.js` maintains a `SHELL` cache list; the cache name
-  is `truehide-v8` (bump the version when the shell changes). Registration
+  is `truehide-v12` (bump the version when the shell changes). Registration
   happens in `shared/base.js` and is skipped on `file://`.
 
 ## Running and testing

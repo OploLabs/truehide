@@ -474,10 +474,8 @@ function escapeHTML(str) {
   return div.innerHTML;
 }
 
-async function flattenPDF() {
+function flattenPDF() {
   if (!pdfDocument) return;
-
-  const filename = $("exportFilename").value.trim() || `${originalPdfName}.pdf`;
 
   let totalRects = 0;
   for (let p = 1; p <= pdfDocument.numPages; p++) {
@@ -485,45 +483,31 @@ async function flattenPDF() {
     if (arr) totalRects += arr.length;
   }
 
-  // Show export confirmation modal
-  const overlay = window.TrueHide.showModal({
-    title: "Export PDF",
-    content: `
-      <p>This will convert all pages into flattened images (rasterized at 2x scale). The original PDF's selectable text will be permanently removed and replaced by black rectangles. The exported PDF will carry jsPDF metadata (producer/creator).</p>
-      <p><strong>File name:</strong> <input type="text" id="exportFilenameModal" value="${escapeHTML(filename)}" maxlength="120" aria-label="Export file name"></p>
-      <p><strong>Verification:</strong> Each page is rendered as a bitmap at double scale, with black rectangles drawn on top. Any original selectable text is physically absent from the output. The progress below updates while the document is generated.</p>
-      <ul>
-        <li>Pages: <strong id="verifPages">0</strong> / <strong>${pdfDocument.numPages}</strong></li>
-        <li>Redaction rectangles drawn: <strong>${totalRects}</strong></li>
-        <li>Expected extractable text after export: <strong>none</strong></li>
-      </ul>
-    `,
-    buttons: [
-      { label: "Flatten & Download", kind: "primary", id: "flattenConfirm" },
-      { label: "Cancel", kind: "default", id: "cancelButton" },
+  const full = $("exportFilename").value.trim() || `${originalPdfName}.pdf`;
+  const base = full.toLowerCase().endsWith(".pdf") ? full.slice(0, -4) : full;
+
+  // Confirm through the shared download dialog: editable file name, summary
+  // rows and a live progress cell while the pages are rasterized.
+  const overlay = window.TrueHide.confirmDownload({
+    fileName: base,
+    extension: ".pdf",
+    confirmLabel: "Flatten & Download",
+    busyLabel: "Flattening…",
+    details: [
+      { label: "Pages", value: String(pdfDocument.numPages) },
+      {
+        label: "Redaction rectangles",
+        value: totalRects ? String(totalRects) : "None",
+      },
+      { label: "Progress", value: `0 / ${pdfDocument.numPages}`, id: "verifProgress" },
     ],
-  });
+    note: "Every page will be rasterized at 2× and the original selectable text will be permanently replaced by black rectangles. The exported PDF carries jsPDF producer metadata. Your file on disk is never modified.",
+    onConfirm: async (fname) => {
+      const progressEl = overlay.querySelector("#verifProgress");
 
-  const filenameInput = overlay.querySelector("#exportFilenameModal");
-  const cancelButton = overlay.querySelector("#cancelButton");
-  const confirmButton = overlay.querySelector("#flattenConfirm");
-  const verifPages = overlay.querySelector("#verifPages");
+      const { jsPDF } = window.jspdf;
+      let output = null;
 
-  // Generate the rasterized PDF, then trigger the download.
-  async function downloadPDF() {
-    if (!confirmButton || confirmButton.disabled) return;
-    confirmButton.disabled = true;
-    const originalLabel = confirmButton.textContent;
-    confirmButton.textContent = "Flattening…";
-
-    const fname =
-      (filenameInput && filenameInput.value.trim()) ||
-      `${originalPdfName}.pdf`;
-
-    const { jsPDF } = window.jspdf;
-    let output = null;
-
-    try {
       for (
         let pageNumber = 1;
         pageNumber <= pdfDocument.numPages;
@@ -578,25 +562,14 @@ async function flattenPDF() {
         canvas.width = 1;
         canvas.height = 1;
 
-        if (verifPages) verifPages.textContent = String(pageNumber);
+        if (progressEl)
+          progressEl.textContent = `${pageNumber} / ${pdfDocument.numPages}`;
       }
 
-      window.TrueHide.hideModal();
       output.save(fname);
       toast(`PDF downloaded as ${fname}.`, { kind: "success" });
-    } finally {
-      // Re-enable the button if generation failed (modal stays open)
-      confirmButton.disabled = false;
-      confirmButton.textContent = originalLabel;
-    }
-  }
-
-  if (cancelButton) {
-    cancelButton.addEventListener("click", () => window.TrueHide.hideModal());
-  }
-  if (confirmButton) {
-    confirmButton.addEventListener("click", downloadPDF);
-  }
+    },
+  });
 }
 
 $("flattenButton").addEventListener("click", flattenPDF);

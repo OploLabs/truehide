@@ -119,7 +119,10 @@ test.describe("TrueHide — privacy & network monitoring", () => {
 
     const [download] = await Promise.all([
       page.waitForEvent('download'),
-      page.click('#cropButton'),
+      (async () => {
+        await page.click('#cropButton');
+        await page.click('#dlConfirm');
+      })(),
     ]);
     await download.saveAs(path.join(process.cwd(), 'test', 'tmp', 'privacy-crop.png'));
     page.removeAllListeners('request');
@@ -154,7 +157,7 @@ test.describe("TrueHide — privacy & network monitoring", () => {
       page.waitForEvent('download', { timeout: 120_000 }),
       (async () => {
         await page.click('#flattenButton');
-        await page.click('#flattenConfirm');
+        await page.click('#dlConfirm');
       })(),
     ]);
     await flattenDownload.saveAs(path.join(process.cwd(), 'test', 'tmp', 'privacy-flatten.pdf'));

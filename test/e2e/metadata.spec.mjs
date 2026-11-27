@@ -210,6 +210,7 @@ test.describe("TrueMetadata — viewer and verified removal", () => {
 
     const downloadPromise = page.waitForEvent("download");
     await page.click("#downloadButton");
+    await page.click("#dlConfirm");
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toBe("photo-clean.jpg");
 
@@ -254,6 +255,7 @@ test.describe("TrueMetadata — viewer and verified removal", () => {
 
     const downloadPromise = page.waitForEvent("download");
     await page.click("#downloadButton");
+    await page.click("#dlConfirm");
     const download = await downloadPromise;
     const outPath = path.join(os.tmpdir(), "truehide-meta-" + Date.now() + ".jpg");
     await download.saveAs(outPath);
@@ -316,6 +318,7 @@ test.describe("TrueMetadata — viewer and verified removal", () => {
 
     const downloadPromise = page.waitForEvent("download");
     await page.click("#downloadButton");
+    await page.click("#dlConfirm");
     const download = await downloadPromise;
     const outPath = path.join(os.tmpdir(), "truehide-meta-" + Date.now() + ".png");
     await download.saveAs(outPath);

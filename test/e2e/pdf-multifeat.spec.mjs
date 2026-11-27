@@ -65,7 +65,7 @@ async function flattenDownload(page) {
   await expect(page.locator(".truehide-modal-overlay")).toBeVisible();
   const [download] = await Promise.all([
     page.waitForEvent("download", { timeout: 120_000 }),
-    page.click("#flattenConfirm"),
+    page.click("#dlConfirm"),
   ]);
   return download;
 }

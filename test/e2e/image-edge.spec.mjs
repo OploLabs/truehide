@@ -39,7 +39,10 @@ test.describe("TrueCrop — transparency, large images, unusual formats", () => 
 
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.click("#cropButton"),
+      (async () => {
+        await page.click("#cropButton");
+        await page.click("#dlConfirm");
+      })(),
     ]);
     expect(download.suggestedFilename()).toBe("transparent-cropped.png");
 
@@ -100,7 +103,10 @@ test.describe("TrueCrop — transparency, large images, unusual formats", () => 
     await page.selectOption("#format", "image/jpeg");
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.click("#cropButton"),
+      (async () => {
+        await page.click("#cropButton");
+        await page.click("#dlConfirm");
+      })(),
     ]);
 
     mkdirSync(OUT_DIR, { recursive: true });

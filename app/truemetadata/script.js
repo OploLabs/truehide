@@ -2273,25 +2273,51 @@
       return;
     }
 
-    const base = $("exportFilename").value.trim() || state.outName;
     const ext = state.outName.split(".").pop() || "jpg";
-    const filename = base.indexOf(".") > -1 ? base : base + "." + ext;
+    const full = $("exportFilename").value.trim() || state.outName;
+    const base = full.toLowerCase().endsWith("." + ext)
+      ? full.slice(0, full.length - ext.length - 1)
+      : full;
 
-    const url = URL.createObjectURL(state.outBlob);
+    const removed = state.meta
+      ? state.meta.fields.filter((f) => !DIMENSION_KEYS.has(f.key)).length
+      : 0;
 
-    const a = document.createElement("a");
+    window.TrueHide.confirmDownload({
+      fileName: base,
+      extension: "." + ext,
+      details: [
+        { label: "Format", value: ext.toUpperCase() },
+        { label: "Size", value: window.TrueHide.formatBytes(state.outBlob.size) },
+        {
+          label: "Method",
+          value:
+            state.outMethod === "canvas"
+              ? "Canvas re-encode"
+              : "Byte-level removal",
+        },
+        { label: "Fields removed", value: String(removed) },
+        { label: "Verification", value: "Passed — no metadata remains" },
+      ],
+      note: "The cleaned copy was re-read and verified. Your original file stays untouched.",
+      onConfirm: (name) => {
+        const url = URL.createObjectURL(state.outBlob);
 
-    a.href = url;
-    a.download = filename;
+        const a = document.createElement("a");
 
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+        a.href = url;
+        a.download = name;
 
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
 
-    toast("Clean copy downloaded. Original file untouched.", {
-      kind: "success",
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+        toast("Clean copy downloaded. Original file untouched.", {
+          kind: "success",
+        });
+      },
     });
   }
 

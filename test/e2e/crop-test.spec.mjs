@@ -121,7 +121,10 @@ test.describe("TrueCrop — full flow", () => {
     const expected = await expectedOutputDims(page);
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.click("#cropButton"),
+      (async () => {
+        await page.click("#cropButton");
+        await page.click("#dlConfirm");
+      })(),
     ]);
 
     expect(download.suggestedFilename()).toBe("blank-cropped.png");
@@ -148,7 +151,10 @@ test.describe("TrueCrop — full flow", () => {
     const expected = await expectedOutputDims(page);
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.click("#cropButton"),
+      (async () => {
+        await page.click("#cropButton");
+        await page.click("#dlConfirm");
+      })(),
     ]);
 
     expect(download.suggestedFilename()).toBe("blank-cropped.jpg");
@@ -199,6 +205,7 @@ test.describe("TrueCrop — full flow", () => {
       });
 
       await page.click("#cropButton");
+      await page.click("#dlConfirm");
       await page.waitForFunction(
         () => window.__cropCapture !== null,
         null,
@@ -242,7 +249,10 @@ test.describe("TrueCrop — full flow", () => {
 
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.click("#cropButton"),
+      (async () => {
+        await page.click("#cropButton");
+        await page.click("#dlConfirm");
+      })(),
     ]);
 
     // The app falls back to PNG when the browser cannot encode WebP.

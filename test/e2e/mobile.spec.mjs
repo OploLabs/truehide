@@ -29,7 +29,10 @@ test.describe("Mobile viewport (390×844) — core flows", () => {
 
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.click("#cropButton"),
+      (async () => {
+        await page.click("#cropButton");
+        await page.click("#dlConfirm");
+      })(),
     ]);
     expect(download.suggestedFilename()).toBe("blank-cropped.png");
   });
@@ -64,7 +67,10 @@ test.describe("Mobile viewport (390×844) — core flows", () => {
     await page.click("#applyButton");
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.click("#downloadButton"),
+      (async () => {
+        await page.click("#downloadButton");
+        await page.click("#dlConfirm");
+      })(),
     ]);
     expect(download.suggestedFilename()).toBe("blank.png");
   });
@@ -90,7 +96,7 @@ test.describe("Mobile viewport (390×844) — core flows", () => {
     // Open the export dialog, then cancel — the app must remain usable.
     await page.click("#flattenButton");
     await expect(page.locator(".truehide-modal-overlay")).toBeVisible();
-    await page.click("#cancelButton");
+    await page.click("#dlCancel");
     await expect(page.locator(".truehide-modal-overlay")).toBeHidden();
     await expect(page.locator("#flattenButton")).toBeEnabled();
   });
@@ -119,15 +125,15 @@ test.describe("Mobile viewport (390×844) — core flows", () => {
       expect(docWidth, "no horizontal document scroll").toBeLessThanOrEqual(VIEWPORT_W + 1);
     }
 
-    // TrueFlatten export modal (filename input + verification list + 2 buttons).
+    // TrueFlatten export modal (filename input + details + 2 buttons).
     await page.goto("/app/trueflatten/");
     await page.setInputFiles("input[type=\"file\"]", SECRET);
     await page.click("#flattenButton");
     await expect(page.locator(".truehide-modal-overlay")).toBeVisible();
     await modalFits();
     // Both actions must be reachable/tappable inside the narrow dialog.
-    await expect(page.locator("#flattenConfirm")).toBeVisible();
-    await expect(page.locator("#cancelButton")).toBeVisible();
+    await expect(page.locator("#dlConfirm")).toBeVisible();
+    await expect(page.locator("#dlCancel")).toBeVisible();
     await page.keyboard.press("Escape");
 
     // Shortcut help dialog.
