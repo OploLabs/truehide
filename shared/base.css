@@ -944,6 +944,12 @@ input[type="file"] {
 
 /* ---------- Utilities ---------- */
 
+/* The `hidden` attribute must win over any author display rule
+   (e.g. .button { display: inline-flex }). */
+[hidden] {
+  display: none !important;
+}
+
 .hidden {
   display: none !important;
 }

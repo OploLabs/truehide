@@ -1,4 +1,4 @@
-const CACHE = "truehide-v9";
+const CACHE = "truehide-v10";
 
 const BASE = new URL("./", self.location.href);
 

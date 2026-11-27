@@ -303,9 +303,9 @@
       put(0x0110, "Camera model", "camera");
       put(0x011a, "Orientation", "general", (v) => ORIENTATIONS[v] || String(v));
       put(0x0131, "Software", "software");
-      put(0x0132, "Artist", "other");
-      put(0x013d, "Date & time", "dates");
-      put(0x013e, "Copyright", "other");
+      put(0x0132, "Date & time", "dates");
+      put(0x013b, "Artist", "other");
+      put(0x013d, "Copyright", "other");
       put(0x829a, "Exposure time", "camera", (v) =>
         v !== null ? (v.n / v.d >= 1 ? (v.n / v.d).toFixed(2) + " s" : "1/" + v.n + " s") : v,
       );
@@ -350,9 +350,10 @@
     }
 
     if (ifdName === "gps") {
-      const lat = t(0x000e), lon = t(0x000f);
-      const latR = t(0x000e), lonR = t(0x0010);
-      const latRef = t(0x000f), lonRef = t(0x0011);
+      // EXIF GPS IFD tags: 0x0001/0x0002 latitude (ref/coords),
+      // 0x0003/0x0004 longitude (ref/coords).
+      const lat = t(0x0002), lon = t(0x0004);
+      const latRef = t(0x0001), lonRef = t(0x0003);
 
       if (lat && lat.value) {
         const ref = latRef ? String(latRef.value).trim() : "N";
@@ -366,32 +367,32 @@
           );
         }
       }
-      if (lonR && lonR.value) {
+      if (lon && lon.value) {
         const ref = lonRef ? String(lonRef.value).trim() : "E";
-        const deg = coordsFromRationals(lonR.value, ref);
+        const deg = coordsFromRationals(lon.value, ref);
         if (deg !== null) {
           addField(
             fields,
             "GPS longitude",
             "location",
-            Math.abs(deg).toFixed(5) + "° (" + dmsText(lonR.value, ref) + ")",
+            Math.abs(deg).toFixed(5) + "° (" + dmsText(lon.value, ref) + ")",
           );
         }
       }
       put(0x0006, "GPS altitude", "location", (v) => {
         const alt = rationalText(v);
-        const ref = t(0x0007);
+        const ref = t(0x0005);
         const suffix = ref && String(ref.value) === "1" ? " m (below sea level)" : " m";
         return alt + suffix;
       });
-      put(0x001d, "GPS date stamp", "dates");
-      put(0x0011, "GPS time stamp", "dates", (v) => {
+      put(0x000a, "GPS date stamp", "dates");
+      put(0x000b, "GPS time stamp", "dates", (v) => {
         if (!Array.isArray(v) || v.length < 3 || v[0] === null) return null;
         const h = v[0].n / v[0].d, m = v[1].n / v[1].d, s = v[2].n / v[2].d;
         return h + ":" + String(Math.trunc(m)).padStart(2, "0") + ":" + s.toFixed(1);
       });
-      put(0x0012, "GPS satellites", "location");
-      put(0x0013, "GPS measurement", "location");
+      put(0x000c, "GPS satellites", "location");
+      put(0x000d, "GPS measurement", "location");
     }
 
     if (ifdName === "interoperability") {
@@ -705,16 +706,18 @@
       const end = Math.min(body + len, n);
 
       if (id === "VP8X" && end > body + 9) {
-        width = ((u8[body + 8] << 16) | (u8[body + 7] << 8) | u8[body + 6]) + 1;
-        height = ((u8[body + 11] << 16) | (u8[body + 10] << 8) | u8[body + 9]) + 1;
+        width = (u8[body + 4] | (u8[body + 5] << 8) | (u8[body + 6] << 16)) + 1;
+        height =
+          (u8[body + 7] | (u8[body + 8] << 8) | (u8[body + 9] << 16)) + 1;
       } else if (id === "VP8L" && end > body + 4) {
         const bits =
           u8[body] | (u8[body + 1] << 8) | (u8[body + 2] << 16) | (u8[body + 3] << 24);
-        width = ((bits >> 1) & 0x3fff) + 1;
-        height = (bits >> 15) + 1;
-      } else if (id === "VP8" && end > body + 10) {
-        const tag = u8[body];
-        if (tag & 1) {
+        // VP8L bitstream (little-endian): sig(1) ver(3) alpha(1) config(1)
+        // width-1(14, bits 6-19) height-1(14, bits 20-33).
+        width = ((bits >> 6) & 0x3fff) + 1;
+        height = ((bits >> 20) & 0x3fff) + 1;
+      } else if (id === "VP8 " && end > body + 9) {
+        if (u8[body] & 1) {
           width = ((u8[body + 7] << 8) | u8[body + 6]) & 0x3fff;
           height = ((u8[body + 9] << 8) | u8[body + 8]) & 0x3fff;
         }
@@ -991,7 +994,11 @@
     let html = "";
     const byCat = {};
     for (const c of CATEGORIES) byCat[c] = [];
-    for (const f of fields) byCat[f.category].push(f);
+    // Only push fields whose category is one we know about.
+    for (const f of fields) {
+      if (!CATEGORIES.includes(f.category)) continue;
+      byCat[f.category].push(f);
+    }
 
     for (const c of CATEGORIES) {
       if (byCat[c].length === 0) continue;
