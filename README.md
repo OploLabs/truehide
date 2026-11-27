@@ -47,27 +47,32 @@ Then visit `http://localhost:8080`.
 ```
 .
 ├── index.html            # Landing page (hero, tool cards, privacy explainer)
-├── styles.css           # Landing-page styles
-├── script.js            # Landing-page behavior (PWA install prompt)
-├── manifest.json        # PWA manifest
-├── sw.js                # Service worker (cache-first, offline support)
-├── icons/               # PWA / favicon icons (SVG)
+├── styles.css            # Landing-page styles
+├── script.js             # Landing-page behavior (PWA install prompt)
+├── manifest.json         # PWA manifest
+├── sw.js                 # Service worker (cache-first, offline support)
+├── icons/                # PWA / favicon icons (SVG)
+├── fonts/                # Local web fonts (Inter, woff2) — no external fetches
 ├── shared/
-│   ├── base.css         # Design system: CSS tokens, shared components, themes
-│   ├── base.js          # Shared behavior: theme, island nav, toasts, file drop,
-│   │                    # shared footer injection, service worker registration
-│   └── footer.html      # Canonical footer — fetched & injected at runtime by base.js
+│   ├── base.css          # Design system: CSS tokens, shared components, themes
+│   ├── base.js           # Shared behavior: theme, island nav, toasts, file drop,
+│   │                     # shared footer injection, service worker registration
+│   ├── dialog.js         # Shared modal/dialog primitives
+│   ├── shortcuts.js      # Shared keyboard-shortcut registration + help dialog
+│   └── footer.html       # Canonical footer — fetched & injected at runtime by base.js
+├── docs/                 # Privacy audit + security posture pages
+├── test/                 # Dev-only test tooling (unit, E2E, integrity, fixtures)
 └── app/
-    ├── trueflatten/     # PDF redaction + flattening (pdf.js + jsPDF, vendored in lib/)
-    ├── trueblur/        # Image redaction: pixelate, blocks, solid, paint
-    └── truecrop/        # Image cropping, PNG/JPEG/WebP export
+    ├── trueflatten/      # PDF redaction + flattening (pdf.js + jsPDF, vendored in lib/)
+    ├── trueblur/         # Image redaction: pixelate, blocks, solid, paint
+    └── truecrop/         # Image cropping, PNG/JPEG/WebP export
 ```
 
 ---
 
 ## Stack
 
-- **Vanilla HTML / CSS / JavaScript** — no frameworks, no build step, no `package.json`
+- **Vanilla HTML / CSS / JavaScript** — no frameworks, no build step in the apps themselves. A dev-only root `package.json` exists solely for the test tooling (Playwright E2E, `node:test` unit tests, integrity checks); it ships no runtime dependencies and is not required to run the site.
 - **[pdf.js 3.11.174](https://mozilla.github.io/pdf.js/)** + **[jsPDF 2.5.1](https://parall.ax/products/jspdf)** for TrueFlatten — vendored locally in `app/trueflatten/lib/`, no CDNs
 - **Canvas API** for TrueBlur and TrueCrop
 - **Service worker** with a cache-first strategy for offline use
@@ -81,7 +86,7 @@ TrueBlur's _Pixelate_ and _Blocks_ modes are visual obfuscation — they don't g
 
 Always inspect your downloaded output before sharing.
 
-The only external request the app makes is a Google Fonts `@import` for the Inter font in `shared/base.css`. It fails silently offline (the font stack falls back to system fonts); no file data, telemetry, or analytics are ever sent anywhere.
+All assets load from the local filesystem — there are **no external resource requests** at all. The Inter typeface is a local `.woff2` file loaded via `@font-face` (see `shared/base.css` and `fonts/`); it degrades silently to the system font stack if the file is missing. No file data, telemetry, or analytics are ever sent anywhere.
 
 ---
 

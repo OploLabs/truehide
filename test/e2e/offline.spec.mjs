@@ -5,7 +5,7 @@ const BLANK = path.resolve("test/fixtures/blank.png");
 const SECRET = path.resolve("test/fixtures/secret.pdf");
 
 // Must match the CACHE constant in sw.js.
-const CACHE_NAME = "truehide-v7";
+const CACHE_NAME = "truehide-v8";
 // The SHELL list in sw.js has 27 entries.
 const MIN_SHELL_ENTRIES = 27;
 

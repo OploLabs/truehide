@@ -1,0 +1,2 @@
+This is a plain text file, not an image.
+It must be rejected by the image tools.

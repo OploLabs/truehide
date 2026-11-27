@@ -102,4 +102,38 @@ test.describe("Mobile viewport (390×844) — core flows", () => {
     await page.keyboard.press("Escape");
     await expect(page.locator(".truehide-modal-overlay")).toBeHidden();
   });
+
+  test("dialogs fit the mobile viewport without horizontal overflow", async ({ page }) => {
+    const VIEWPORT_W = 390;
+
+    async function modalFits() {
+      const box = await page.locator(".truehide-modal").boundingBox();
+      expect(box, "dialog should be visible").not.toBeNull();
+      expect(box.x, "dialog must not overflow left").toBeGreaterThanOrEqual(0);
+      expect(
+        box.x + box.width,
+        "dialog must not overflow right",
+      ).toBeLessThanOrEqual(VIEWPORT_W + 0.5);
+      // No page-level horizontal scroll caused by the dialog.
+      const docWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(docWidth, "no horizontal document scroll").toBeLessThanOrEqual(VIEWPORT_W + 1);
+    }
+
+    // TrueFlatten export modal (filename input + verification list + 2 buttons).
+    await page.goto("/app/trueflatten/");
+    await page.setInputFiles("input[type=\"file\"]", SECRET);
+    await page.click("#flattenButton");
+    await expect(page.locator(".truehide-modal-overlay")).toBeVisible();
+    await modalFits();
+    // Both actions must be reachable/tappable inside the narrow dialog.
+    await expect(page.locator("#flattenConfirm")).toBeVisible();
+    await expect(page.locator("#cancelButton")).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    // Shortcut help dialog.
+    await page.evaluate(() => window.TrueHide.showShortcutHelp());
+    await expect(page.locator(".truehide-modal-overlay")).toBeVisible();
+    await modalFits();
+    await page.keyboard.press("Escape");
+  });
 });

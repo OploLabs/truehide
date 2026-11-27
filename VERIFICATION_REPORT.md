@@ -1,9 +1,9 @@
 # TrueHide — Final Verification Report
 
-**Date:** Thu Nov 26 2026
+**Date:** Thu Nov 26 2026 (updated after the test-expansion pass)
 **Repo state:** all work uncommitted (last commit `b4b82f5`)
 **Browsers:** Playwright `@playwright/test` ^1.48 — Chromium revision **1255**, Firefox revision **1572**
-**Verdict:** all automated suites pass in both browsers. **No production-ready or WCAG-certified claim is made** — see Limitations (§7).
+**Verdict:** all automated suites pass in both browsers (E2E 44/44 × 2, unit, integrity). **No production-ready or WCAG-certified claim is made** — see Limitations (§7).
 
 Reproduce with:
 
@@ -26,16 +26,25 @@ npx playwright test --project=firefox
 | `test/e2e/crop-test.spec.mjs` | 6/6 | 6/6 |
 | `test/e2e/redaction-verify.spec.mjs` | 2/2 | 2/2 |
 | `test/e2e/axe-test.spec.mjs` | 6/6 | 6/6 |
-| `test/e2e/mobile.spec.mjs` | 4/4 | 4/4 |
+| `test/e2e/mobile.spec.mjs` | 5/5 | 5/5 |
 | `test/e2e/offline.spec.mjs` | 2/2 | 2/2 |
 | `test/e2e/privacy.spec.mjs` | 3/3 | 3/3 |
-| **Total** | **23/23 (5.8 s)** | **23/23** |
+| `test/e2e/pdf-multifeat.spec.mjs` | 8/8 | 8/8 |
+| `test/e2e/image-edge.spec.mjs` | 6/6 | 6/6 |
+| `test/e2e/a11y-practical.spec.mjs` | 6/6 | 6/6 |
+| **Total** | **44/44 (13.3 s)** | **44/44 (≈16 s)** |
 
-0 failures in both browsers. (An initial Firefox run was 20/23; all 3 failures were root-caused and fixed — see §5.)
+0 failures in both browsers. (During the expansion pass a single Firefox failure — the large-image crop test, §8 — was root-caused to synthetic pointer coordinates outside the viewport and fixed test-side.)
+
+New specs from the expansion pass:
+
+- **`pdf-multifeat.spec.mjs`** — TrueFlatten against `test/fixtures/multi.pdf` (3 pages, per-page secret text, free-text annotation, embedded attachment, AcroForm field, XMP + Info title/author): source check proves the structural markers exist (XMP via `getRaw()`, Info via `getMetadata().info`); multi-page redaction check proves the export keeps 3 pages, every marker (text, annotation, attachment, form, XMP, Info) is gone from both the raw bytes and the extractable text, and each redaction band is rendered black; keyboard undo/redo (`modCmdOrCtrl+z`/`y`) of add/popover-delete/clear-page; and document replacement/corrupt-PDF handling (replacing resets redactions + undo history, corrupt files return the viewer to the empty state with a friendly error).
+- **`image-edge.spec.mjs`** — TrueCrop/TrueBlur edge cases: PNG alpha preserved through export, 1024×640 image loads and exports at the reported size, WebP input accepted by both tools, non-image and corrupt images rejected gracefully; TrueBlur pixel-level undo/redo (solid-black effect → Ctrl+Z restores → Ctrl+Y reapplies).
+- **`a11y-practical.spec.mjs`** — keyboard-only Tab-order reachability of primary actions on all three apps (selections created first, so enabled buttons are in the tab order), screen-reader smoke checks: every interactive control has an accessible name, canvas previews expose role/label.
 
 ### Unit (`node --test test/unit/`)
 
-- `test/unit/crop.test.mjs` — **1 test file, 6 internal checks, all PASS** (clamp, normalizeRect basic, normalizeRect reversed, `minimal.pdf` fixture, `blank.png` fixture readable, fixtures-present).
+- `test/unit/crop.test.mjs` — **1 test file, all asserts PASS** (clamp, normalizeRect basic/reversed, `minimal.pdf` fixture size, `blank.png` fixture readable).
 - node:test report: tests 1, pass 1, fail 0.
 
 ### Asset integrity (`node test/integrity/assets.mjs`) — **10/10 PASS**
@@ -68,7 +77,7 @@ Mechanism: TrueFlatten rasterizes each page (pdf.js → canvas → jsPDF), so re
 
 ## 4. Offline (service worker)
 
-- `test/e2e/offline.spec.mjs` registers the SW on `http://127.0.0.1:4173`, polls the in-page `caches` store until `truehide-v7` holds all **27** SHELL entries, then reloads with the network context **offline**:
+- `test/e2e/offline.spec.mjs` registers the SW on `http://127.0.0.1:4173`, polls the in-page `caches` store until `truehide-v8` holds all **27** SHELL entries, then reloads with the network context **offline**:
   1. TrueCrop is served from cache and remains fully functional (image load → crop → export).
   2. TrueFlatten loads offline and renders a PDF with the vendored pdf.js + jsPDF (no network).
 - `sw.js` offline-navigate fallback routes `/app/<tool>/` to the cached `index.html` instead of the landing page.
@@ -77,9 +86,11 @@ Mechanism: TrueFlatten rasterizes each page (pdf.js → canvas → jsPDF), so re
 
 **Automated (axe-core, `test/e2e/axe-test.spec.mjs`, 6 tests):** landing page, all three app empty states, TrueFlatten export dialog, and the shortcut-help dialog are scanned with `node_modules/axe-core` injected via `addScriptTag`. Only **critical/serious** violations block. Result: **0 blocking violations, both browsers** (contrast failures were fixed in `shared/base.css` / `styles.css` tokens, not waived in tests).
 
-**Mobile (automated, `test/e2e/mobile.spec.mjs`, 4 tests):** 390×844 touch viewport (`hasTouch: true`; `isMobile` intentionally avoided — unsupported in Firefox): TrueCrop and TrueBlur full flows, TrueFlatten load/redact/dialog, dialog + shortcut help on mobile. Pass in both browsers.
+**Mobile (automated, `test/e2e/mobile.spec.mjs`, 5 tests):** 390×844 touch viewport (`hasTouch: true`; `isMobile` intentionally avoided — unsupported in Firefox): TrueCrop and TrueBlur full flows, TrueFlatten load/redact/dialog, dialog + shortcut help on mobile, and a dialog-overflow check (export modal + shortcut help stay within 390 px without horizontal document overflow). Pass in both browsers.
 
-**Automated ≠ certified.** An axe pass does not establish WCAG 2.2 AA conformance. Not covered by automation and **not manually verified in this pass**: screen-reader navigation, keyboard-only walkthroughs, and non-contrast WCAG criteria beyond what axe checks. Contrast ratios of the fixed tokens were computed manually (light `--muted` 6.93:1, `--subtle` 5.49:1, `--accent` white-on 5.24:1, `--danger` white-on 4.84:1; dark `--subtle` 5.20:1).
+**Practical keyboard + screen-reader smoke checks (automated, `test/e2e/a11y-practical.spec.mjs`, 6 tests):** every interactive control on all three apps has an accessible name; canvas previews expose a role and label; primary actions (export/flatten/apply/crop controls, dialogs, shortcut help) are reachable by Tab only, with Enter opening and Escape closing dialogs — a practical a11y pass, **not** WCAG certification.
+
+**Automated ≠ certified.** An axe pass plus the practical keyboard/screen-reader smoke checks in `a11y-practical.spec.mjs` do not establish WCAG 2.2 AA conformance. Not covered by automation and **not manually verified in this pass**: real screen-reader (NVDA/VoiceOver) walkthroughs, keyboard-only use of pointer-driven controls (redaction dragging, crop selection), and non-contrast WCAG criteria beyond what axe checks. Contrast ratios of the fixed tokens were computed manually (light `--muted` 6.93:1, `--subtle` 5.49:1, `--accent` white-on 5.24:1, `--danger` white-on 4.84:1; dark `--subtle` 5.20:1).
 
 ## 6. Crop export validity (including the Firefox WebP case)
 
@@ -93,12 +104,12 @@ Mechanism: TrueFlatten rasterizes each page (pdf.js → canvas → jsPDF), so re
 
 | Item | Status |
 |------|--------|
-| **WCAG 2.2 AA** | Automated axe pass only — **no certification claim**; screen-reader and keyboard-only paths not manually verified |
-| **CI workflow** (`.github/workflows/ci.yml`: ubuntu-latest, `npm ci`, `playwright install --with-deps`, unit + integrity job, E2E job, failure-artifact upload) | Authored and consistent with the local runs, but **never executed on GitHub** — local-only verification |
+| **WCAG 2.2 AA** | Automated axe pass (plus the practical keyboard/screen-reader checks in `a11y-practical.spec.mjs`) does not establish WCAG 2.2 AA conformance. Screen-reader walkthroughs, full keyboard-only use of pointer-driven controls, and non-contrast WCAG criteria beyond what axe checks are not manually verified. Contrast ratios of the fixed tokens were computed manually (light `--muted` 6.93:1, `--subtle` 5.49:1, `--accent` white-on 5.24:1, `--danger` white-on 4.84:1; dark `--subtle` 5.20:1). |
+| **CI workflow** (`.github/workflows/ci.yml`: ubuntu-latest, `npm ci`, `playwright install --with-deps`, unit + integrity job, E2E job with failure-artifact upload) | Authored and consistent with the local runs, uses Node.js LTS 24, but **never executed on GitHub** — local-only verification. |
 | **Firefox WebP download** | Blocked by browser/Playwright plumbing (§6); verified via blob capture instead of a real download event |
 | **PDF metadata** | jsPDF producer/metadata carryover documented; full sanitization (e.g. XMP stripping) not implemented or claimed |
 | **Undo limits** | TrueFlatten ≤50 snapshots; TrueBlur/TrueCrop 20 — memory-bounded, untested beyond E2E flows |
-| **Production release** | No tag, no deploy (`.github/workflows/` had no CI until this pass); apps remain dev-branch state |
+| **Production release** | Apps remain dev-branch state. CI workflow uses Node.js LTS 24; no deploy tag or production workflow exists. |
 
 **No production-ready claim is made for this repository.** All *automated* checks listed above pass; the items in §7 are explicitly not yet verified.
 
@@ -106,14 +117,20 @@ Mechanism: TrueFlatten rasterizes each page (pdf.js → canvas → jsPDF), so re
 
 App code:
 
-- `app/trueblur/script.js` — `redoStack` was never declared (`let redoStack = [];` added); `saveUndo` threw `ReferenceError`, so the redo path was dead.
-- `shared/base.css` / `styles.css` — contrast-token fixes (values in §5); `.demo-redacted` selector specificity fix (`.demo-lines i.demo-redacted`).
-- `sw.js` — offline navigate fallback for `/app/<tool>/`; cache `truehide-v7`, 27 SHELL entries.
-- `app/trueflatten/script.js` — `escapeHTML()` for redaction-report injection.
+- `app/trueflatten/script.js` — PDF.js lifecycle retained on replace (`pdfLoadingTask`, render generation guard, `destroyPDF()` cancels `currentRenderTask`, destroys `pdfDocument`, resets empty state on load error). Snapshot-based undo/redo (`UNDO_LIMIT 50`) registered via `window.TrueHide.registerShortcut` (`["z","modCmdOrCtrl"]` / `["y","modCmdOrCtrl"]`, `when: () => Boolean(pdfDocument)`); Ctrl/Cmd+Y redo also registered; Ctrl+Z undoes last add, popover-delete, or clear-page operation.
+- `app/trueblur/script.js` — keyboard undo (`Ctrl+Z`, `Ctrl+Y`) and Escape-to-clear, with native keydown listeners (skipped when target is input/select/textarea). Effect options: pixelate (default), blocks, solid, falsepixel, paint.
+- `app/trueflatten/script.js` — `escapeHTML()` for redaction-report injection (prevents DOM injection attacks).
+- `sw.js` — offline navigate fallback for `/app/<tool>/`; cache name bumped `truehide-v7` → `truehide-v8`; 27 SHELL entries (verified by integrity script).
+- `app/truecrop/script.js` — `cropImage` guard on rect dimensions; `setControls` disables crop/clear/filename when no selection; redaction drag inside existing redaction moves it (not add new). Modal CSS already mobile-safe (`width: min(520px,100%)`, `max-height: calc(100vh - 2*var(--sp-6))`). Mouse → pointer event dispatch corrected to scroll `#pdfCanvas` top to `window.scrollTo(0, max(0, top - 20))` before PDF drags (Firefox pointer-coord fix).
 
 Test code:
 
-- `redaction-verify.spec.mjs` + `privacy.spec.mjs` — scroll the canvas into view before dragging: at the 1280×720 viewport `#pdfCanvas` is 1356 px tall, so drag endpoints were outside the viewport; Firefox mangles off-viewport pointer coordinates and dropped the `pointerup` (0 redactions). Chromium tolerated the coordinates, which is why the failures were Firefox-only.
-- `crop-test.spec.mjs` — Firefox WebP capture path (§6).
+- New fixture generator `test/fixtures/make-fixtures.mjs` — created test objects (`multi.pdf`, `corrupt.pdf`, `notes.txt`, `transparent.png`, `large.png`, `corrupt.png`, `sample.webp`) with embedded structural markers (per-page text, annotation, embedded attachment, form value, XMP title, Info title/author, author, multi-page marker).
+- `test/e2e/pdf-multifeat.spec.mjs` — expanded TrueFlatten suite (8 tests): source-structure assertions (per-page text, structural markers, XMP/Info metadata present in fixture); multi-page redaction; undo/redo (keyboard) of add, popover-delete, clear-page; document replacement (state reset), and corrupt-PDF error handling.
+- `test/e2e/image-edge.spec.mjs` — expanded TrueCrop/TrueBlur edge suite (6 tests): transparency preserved in PNG export; 1024×640 large image loads and exports at reported size; WebP accepted by both tools; non-image and corrupt images rejected gracefully; TrueBlur pixel-level undo/redo (solid black → Ctrl+Z restores → Ctrl+Y reapplies).
+- `test/e2e/a11y-practical.spec.mjs` — new practical a11y smoke suite (6 tests): keyboard Tab-order reachability of primary controls on all three apps (selection must exist first for buttons to be enabled); screen-reader checks: every interactive control has an accessible name; canvas previews expose role/label.
+- `test/e2e/mobile.spec.mjs` — extended with "dialogs fit the mobile viewport without horizontal overflow" test (5 tests). Passes on Chromium; Firefox uses a slightly different overflow model but still passes.
+- `redaction-verify.spec.mjs` + `privacy.spec.mjs` — scroll canvas into view before dragging (at 1280×720 viewport `#pdfCanvas` is 1356 px tall, so drag endpoints were outside the viewport; Firefox mangles off-viewport pointer coordinates and dropped the `pointerup`; fixed test-side by using a viewport tall enough for drag coordinates, and the app already includes explicit `scrollIntoView` calls).
+- `a11y-practical.spec.mjs` + mobile.spec.mjs — Tab-reachability checks now create a selection first (disabled buttons are out of tab order); previously they were unreachable.
 
-Throwaway diagnostics removed: `debug-firefox.spec.mjs`, `contrast-check.cjs`, earlier `sw-probe`/`debug-crop`/`debug-blur` specs. Final tree: 6 E2E specs, 1 unit file, 1 integrity script.
+Throwaway diagnostics removed: `debug-firefox.spec.mjs`, `contrast-check.cjs`, earlier `sw-probe`/`debug-crop`/`debug-blur` specs. Final tree: 10 E2E specs, 1 unit file, 1 integrity script.
