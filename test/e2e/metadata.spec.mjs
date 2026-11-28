@@ -32,6 +32,94 @@ function chunk(type, data) {
   return Buffer.concat([len, typeBuf, data, crc]);
 }
 
+// JPEG structural segment builders for the scan-data regression tests.
+// A segment is FF <marker> <len BE> <payload>; len includes the two
+// length bytes. Entropy-coded scan data is NOT a segment — raw bytes
+// follow the SOS header and are appended as-is, never wrapped.
+function seg(marker, payload) {
+  if (payload == null || payload.length === undefined) {
+    throw new Error("seg() called without a payload");
+  }
+  const out = Buffer.alloc(4 + payload.length);
+  out[0] = 0xff;
+  out[1] = marker;
+  out.writeUInt16BE(payload.length + 2, 2);
+  payload.copy(out, 4);
+  return out;
+}
+
+// Synthetic scan data: a fill byte with 0xFF 0x00 byte-stuffing and
+// RST restart markers patched in at the given positions.
+function scanWithStuffing(length, fill, patches) {
+  const buf = Buffer.alloc(length, fill);
+  for (const [idx, code] of patches) {
+    buf[idx] = 0xff;
+    buf[idx + 1] = code;
+  }
+  return buf;
+}
+
+const JFIF = Buffer.from([0, 0, 0x4a, 0x46, 0x49, 0x46, 0, 0, 1, 1, 0, 0, 0, 0]);
+
+const DQT_PAYLOAD = (() => {
+  const p = Buffer.alloc(65);
+  p[0] = 0x00;
+  p.fill(0x10, 1);
+  return p;
+})();
+
+// 48×64, 3-component SOF payload (identical layout for SOF0/SOF2).
+const SOF = Buffer.from([
+  0x08, 0x00, 0x30, 0x00, 0x40, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01,
+  0x03, 0x11, 0x01,
+]);
+
+const DHT_PAYLOAD = (() => {
+  const p = Buffer.alloc(0x74);
+  p[0] = 0x00;
+  for (let i = 0; i < 16; i++) p[1 + i] = 1;
+  for (let i = 17; i < 33; i++) p[i] = 0x01;
+  return p;
+})();
+
+const SOS1 = Buffer.from([0x03, 0x01, 0x00, 0x00, 0x01, 0x05, 0x3f, 0x00]);
+const SOS2 = Buffer.from([0x03, 0x01, 0x00, 0x00, 0x02, 0x11, 0x3f, 0x00]);
+
+// Real little-endian EXIF APP1 block: IFD0 with camera make and model.
+// Produces two recognized metadata fields ("Camera make", "Camera model").
+function makeExifApp1() {
+  const make = Buffer.from("TESTCAM\0", "latin1");
+  const model = Buffer.from("TESTLAP\0", "latin1");
+  const tiff = Buffer.alloc(8 + 2 + 24 + 4 + make.length + model.length);
+  tiff.set([0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00], 0);
+  tiff.writeUInt16LE(2, 8); // two IFD0 entries
+  const e1 = 10;
+  tiff.writeUInt16LE(0x010f, e1); // Make
+  tiff.writeUInt16LE(2, e1 + 2); // ASCII
+  tiff.writeUInt32LE(8, e1 + 4);
+  tiff.writeUInt32LE(38, e1 + 8);
+  const e2 = 22;
+  tiff.writeUInt16LE(0x0110, e2); // Model
+  tiff.writeUInt16LE(2, e2 + 2);
+  tiff.writeUInt32LE(8, e2 + 4);
+  tiff.writeUInt32LE(46, e2 + 8);
+  tiff.writeUInt32LE(0, 34); // no next IFD
+  tiff.set(make, 38);
+  tiff.set(model, 46);
+  const payload = Buffer.alloc(6 + tiff.length);
+  payload.set([0x45, 0x78, 0x69, 0x66, 0, 0], 0); // "Exif\0\0"
+  payload.set(tiff, 6);
+  return payload;
+}
+
+// APP1 XMP block; the dc:creator field is recognized by the parser.
+const XMP_APP1 = Buffer.from(
+  'http://ns.adobe.com/xap/1.0/\u003Cx:xmpmeta\u003E\u003Cdc:creator xmlns:dc="http://purl.org/dc/elements/1.1/"\u003E\u003Crdf:Seq\u003E\u003Crdf:li\u003ESECRET-XMP\u003C/rdf:li\u003E\u003C/rdf:Seq\u003E\u003C/dc:creator\u003E\u003C/x:xmpmeta\u003E',
+  "utf8",
+);
+
+const COM_SECRET = Buffer.from("SECRET-COMMENT", "latin1");
+
 // Little-endian TIFF with IFD0 (Model, Software, ExifIFD pointer) and an
 // Exif sub-IFD carrying ISO — built in-page by canvasJpeg(page, true).
 
@@ -350,38 +438,25 @@ test.describe("TrueMetadata — viewer and verified removal", () => {
   test("progressive JPEG (multi-SOS) with XMP between scans", async ({ page }) => {
     await page.goto("/app/truemetadata/");
 
-    // Build a progressive JPEG with 2 SOS scans and XMP metadata between them.
-    const { Buffer } = await import("node:buffer");
-    const { writeFileSync } = await import("node:fs");
-
-    function seg(marker, payload) {
-      const out = Buffer.alloc(4 + payload.length);
-      out[0] = 0xff;
-      out[1] = marker;
-      out.writeUInt16BE(payload.length + 2, 2);
-      payload.copy(out, 4);
-      return out;
-    }
-
-    const jfif = Buffer.from([0, 0, 0x4a, 0x46, 0x49, 0x46, 0, 0, 1, 1, 0, 0, 0, 0]);
-    const sof1 = Buffer.from([0x08, 0x00, 0x30, 0x00, 0x40, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]);
-    const sos1 = Buffer.from([0x03, 0x01, 0x00, 0x00, 0x01, 0x05, 0x3f, 0x00]);
-    // Scan 1 data: includes byte stuffing (0xFF 0x00) and RST0 (0xFF 0xD0)
-    const scan1 = Buffer.alloc(180, 0x55);
-    scan1[10] = 0xff; scan1[11] = 0x00;   // stuffed byte
-    scan1[50] = 0xff; scan1[51] = 0xd2;    // RST0
-    const sof2 = Buffer.from([0x08, 0x00, 0x18, 0x00, 0x18, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]);
-    const sos2 = Buffer.from([0x03, 0x01, 0x00, 0x00, 0x02, 0x11, 0x3f, 0x00]);
+    // Progressive JPEG: EXIF, JFIF, DQT, SOF2, DHT, first SOS scan
+    // (with byte stuffing and a restart marker), an APP1 XMP block
+    // placed between the two SOS scans, the second scan, then EOI.
+    const scan1 = scanWithStuffing(180, 0x55, [[10, 0x00], [50, 0xd2]]);
     const scan2 = Buffer.from([0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb]);
-    const xmp = Buffer.from("http://ns.adobe.com/xap/1.0/\u003Cx:xmpmeta\u003ESECRET-XMP\u003C/x:xmpmeta\u003E", "utf8");
 
     const jpeg = Buffer.concat([
       Buffer.from([0xff, 0xd8]),
-      seg(0xe1, Buffer.from("Exif", "ascii")), // APP1 EXIF placeholder
-      seg(0xe0, jfif),
-      seg(0xda, sos1), seg(1 + scan1.length), scan1,
-      seg(0xe1, xmp), // XMP inserted between scans!
-      seg(0xda, sos2), seg(1 + scan2.length), scan2,
+      seg(0xe1, makeExifApp1()),
+      seg(0xfe, COM_SECRET),
+      seg(0xe0, JFIF),
+      seg(0xdb, DQT_PAYLOAD),
+      seg(0xc2, SOF),
+      seg(0xcc, DHT_PAYLOAD),
+      seg(0xda, SOS1),
+      scan1,
+      seg(0xe1, XMP_APP1),
+      seg(0xda, SOS2),
+      scan2,
       Buffer.from([0xff, 0xd9]),
     ]);
 
@@ -391,69 +466,73 @@ test.describe("TrueMetadata — viewer and verified removal", () => {
       buffer: jpeg,
     });
 
-    await expect(page.locator("#beforeCount")).toContainText("fields found");
-    await expect(page.locator("#beforeTables")).toContainText("JFIF");
+    // The parser must read the EXIF fields as well as the XMP block that
+    // sits between the two SOS scans.
+    await expect(page.locator("#beforeCount")).toContainText("4 fields found");
+    await expect(page.locator("#beforeTables")).toContainText("TESTCAM");
+    await expect(page.locator("#beforeTables")).toContainText("SECRET-COMMENT");
+    await expect(page.locator("#beforeTables")).toContainText("SECRET-XMP");
+    await expect(page.locator("#removeButton")).toBeEnabled();
 
     await page.click("#removeButton");
+
+    await expect(page.locator("#afterPanel")).toBeVisible();
     await expect(page.locator("#afterSummary")).toContainText("Verified clean");
+    await expect(page.locator("#statusChipText")).toHaveText("Clean · verified");
 
     const downloadPromise = page.waitForEvent("download");
     await page.click("#downloadButton");
     await page.click("#dlConfirm");
     const download = await downloadPromise;
-    const outPath = require("node:path").join(require("node:os").tmpdir(), "truehide-meta-" + Date.now() + ".jpg");
+    const outPath = path.join(os.tmpdir(), "truehide-meta-" + Date.now() + ".jpg");
     await download.saveAs(outPath);
-    const out = require("node:fs").readFileSync(outPath);
-    require("node:fs").unlinkSync(outPath);
+    const out = fs.readFileSync(outPath);
+    fs.unlinkSync(outPath);
 
-    // Output must be a valid JPEG: SOI + EOI, EXIF dropped, JFIF kept, scan data preserved.
+    // Output is a valid JPEG: SOI/EOI intact, EXIF/COM/XMP stripped,
+    // JFIF kept, and both scans (with stuffed bytes and restart
+    // markers) survive the byte-level removal.
     expect(out[0]).toBe(0xff);
-    expect(out[1]).toBe(0xd9 === out[out.length - 1] ? "EOI check handled" : true);
+    expect(out[1]).toBe(0xd8);
+    expect(out[out.length - 2]).toBe(0xff);
+    expect(out[out.length - 1]).toBe(0xd9);
     const t = out.toString("latin1");
     expect(t).not.toContain("Exif");
+    expect(t).not.toContain("TESTCAM");
+    expect(t).not.toContain("SECRET-COMMENT");
     expect(t).not.toContain("SECRET-XMP");
     expect(t).toContain("JFIF");
-    // Scan data (including stuffed bytes and restart markers) must survive.
-    const scanBuf = Buffer.alloc(180, 0x55);
-    scanBuf[10] = 0xff; scanBuf[11] = 0x00;
-    scanBuf[50] = 0xff; scanBuf[51] = 0xd2;
-    expect(out.includes(scanBuf)).toBe(true);
+    expect(out.includes(scan1)).toBe(true);
+    expect(out.includes(scan2)).toBe(true);
   });
 
   test("progressive JPEG (multi-SOS) byte-stuffing and restart markers", async ({ page }) => {
     await page.goto("/app/truemetadata/");
 
-    function seg(marker, payload) {
-      const out = Buffer.alloc(4 + payload.length);
-      out[0] = 0xff;
-      out[1] = marker;
-      out.writeUInt16BE(payload.length + 2, 2);
-      payload.copy(out, 4);
-      return out;
-    }
-
-    const jfif = Buffer.from([0, 0, 0x4a, 0x46, 0x49, 0x46, 0, 0, 1, 1, 0, 0, 0, 0]);
-    const sof1 = Buffer.from([0x08, 0x00, 0x30, 0x00, 0x40, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]);
-    const sos1 = Buffer.from([0x03, 0x01, 0x00, 0x00, 0x01, 0x05, 0x3f, 0x00]);
-    // Scan data with multiple stuffed bytes and multiple restart markers
-    const scan1 = Buffer.alloc(200, 0x30);
-    for (let i = 0; i < scan1.length; i += 37) scan1[i] = 0xff;
-    scan1[40] = 0xff; scan1[41] = 0x00;   // stuffed
-    scan1[80] = 0xff; scan1[81] = 0xd1;    // RST1
-    scan1[120] = 0xff; scan1[121] = 0x00; // stuffed
-    scan1[160] = 0xff; scan1[161] = 0xd7; // RST7
-
-    const sof2 = Buffer.from([0x08, 0x00, 0x18, 0x00, 0x18, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]);
-    const sos2 = Buffer.from([0x03, 0x01, 0x00, 0x00, 0x02, 0x11, 0x3f, 0x00]);
+    // Two-SOS progressive JPEG whose first scan carries multiple
+    // stuffed bytes (0xFF 0x00) and restart markers (RST1, RST7);
+    // the inter-scan segments are DQT/SOF2/DHT.
+    const scan1 = scanWithStuffing(
+      200,
+      0x30,
+      [[40, 0x00], [80, 0xd1], [120, 0x00], [160, 0xd7]],
+    );
     const scan2 = Buffer.from([0x11, 0x22, 0x33, 0x44, 0x55]);
 
     const jpeg = Buffer.concat([
       Buffer.from([0xff, 0xd8]),
-      seg(0xe0, jfif),
-      seg(0xdb, Buffer.concat([Buffer.from([0]), Buffer.alloc(64, 0x10)])),
-      seg(0xc0, sof1), seg(0xda, sos1), scan1,
-      seg(0xdb, Buffer.concat([Buffer.from([0]), Buffer.alloc(64, 0x10)])),
-      seg(0xc1, sof2), seg(0xda, sos2), scan2,
+      seg(0xe1, makeExifApp1()),
+      seg(0xe0, JFIF),
+      seg(0xdb, DQT_PAYLOAD),
+      seg(0xc2, SOF),
+      seg(0xcc, DHT_PAYLOAD),
+      seg(0xda, SOS1),
+      scan1,
+      seg(0xdb, DQT_PAYLOAD),
+      seg(0xc2, SOF),
+      seg(0xcc, DHT_PAYLOAD),
+      seg(0xda, SOS2),
+      scan2,
       Buffer.from([0xff, 0xd9]),
     ]);
 
@@ -463,84 +542,99 @@ test.describe("TrueMetadata — viewer and verified removal", () => {
       buffer: jpeg,
     });
 
-    await expect(page.locator("#beforeCount")).toContainText("fields found");
+    await expect(page.locator("#beforeCount")).toContainText("2 fields found");
+    await expect(page.locator("#beforeTables")).toContainText("TESTCAM");
+    await expect(page.locator("#removeButton")).toBeEnabled();
 
     await page.click("#removeButton");
+
+    await expect(page.locator("#afterPanel")).toBeVisible();
     await expect(page.locator("#afterSummary")).toContainText("Verified clean");
 
     const downloadPromise = page.waitForEvent("download");
     await page.click("#downloadButton");
     await page.click("#dlConfirm");
     const download = await downloadPromise;
-    const outPath = require("node:path").join(require("node:os").tmpdir(), "truehide-meta-" + Date.now() + ".jpg");
+    const outPath = path.join(os.tmpdir(), "truehide-meta-" + Date.now() + ".jpg");
     await download.saveAs(outPath);
-    const out = require("node:fs").readFileSync(outPath);
-    require("node:fs").unlinkSync(outPath);
+    const out = fs.readFileSync(outPath);
+    fs.unlinkSync(outPath);
 
-    // Output must be valid JPEG with SOI/EOI, JFIF kept, EXIF dropped,
-    // and scan data (including stuffed 0xFF 0x00 and RST markers) preserved.
+    // Output is a valid JPEG: SOI/EOI intact, EXIF dropped, JFIF kept,
+    // and both scans (including stuffed 0xFF 0x00 pairs and RST
+    // restart markers) survive byte-level removal.
     expect(out[0]).toBe(0xff);
+    expect(out[1]).toBe(0xd8);
     expect(out[out.length - 2]).toBe(0xff);
     expect(out[out.length - 1]).toBe(0xd9);
     const t = out.toString("latin1");
     expect(t).not.toContain("Exif");
+    expect(t).not.toContain("TESTCAM");
     expect(t).toContain("JFIF");
-    // Scan data with stuffing and RST markers must survive intact.
-    const scanBuf = Buffer.alloc(200, 0x30);
-    for (let i = 0; i < scan1.length; i += 37) scan1[i] = 0xff;
-    scan1[40] = 0xff; scan1[41] = 0x00;
-    scan1[80] = 0xff; scan1[81] = 0xd1;
-    scan1[120] = 0xff; scan1[121] = 0x00;
-    scan1[160] = 0xff; scan1[161] = 0xd7;
     expect(out.includes(scan1)).toBe(true);
+    expect(out.includes(scan2)).toBe(true);
   });
 
   test("baseline JPEG with byte-stuffed scan data and restart markers", async ({ page }) => {
     await page.goto("/app/truemetadata/");
 
-    // This test validates that the updated stripJpeg correctly preserves
-    // entropy-coded scan data containing byte-stuffing (0xFF 0x00) and
-    // restart markers (RST0-RST7 / 0xD0-0xD7), which the original
-    // implementation silently dropped.
+    // Baseline single-scan JPEG: real EXIF, JFIF, a comment, DQT, SOF0,
+    // one SOS, and a scan whose entropy-coded data contains byte
+    // stuffing (0xFF 0x00) and restart markers (RST0, RST3).
+    const scan = Buffer.from([
+      0xff, 0x00, 0xff, 0xd0, 0x11, 0x22, 0x33, 0x44, 0x55,
+      0xff, 0x00, 0xff, 0xd3, 0x66, 0x77, 0x88, 0x99,
+    ]);
+
+    const jpeg = Buffer.concat([
+      Buffer.from([0xff, 0xd8]),
+      seg(0xe1, makeExifApp1()),
+      seg(0xe0, JFIF),
+      seg(0xfe, COM_SECRET),
+      seg(0xdb, DQT_PAYLOAD),
+      seg(0xc0, SOF),
+      seg(0xda, SOS1),
+      scan,
+      Buffer.from([0xff, 0xd9]),
+    ]);
+
     await page.setInputFiles('input[type="file"]', {
       name: "stuffed-scan.jpg",
       mimeType: "image/jpeg",
-      buffer: Buffer.from([ // minimal valid JPEG
-        0xff, 0xd8, // SOI
-        0xff, 0xe1, 0x05, 0x00, 0x4a, 0x45, 0x78, 0x69, 0x66, 0x00, 0x00, // APP1 "Exif"
-        0xff, 0xdb, 0x00, 84, ...Array(64).fill(0x10), // DQT
-        0xff, 0xc0, 0x0b, 0x00, 30, 0x00, 40, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, // SOF0
-        0xff, 0xda, 0x0c, 0x00, // SOS
-        0xff, 0x00, 0xff, 0xd0, 0x11, 0x22, 0x33, 0x44, 0x55, // stuffed 0xFF 0x00 + RST0
-        0xff, 0x00, 0xff, 0xd3, 0x66, 0x77, 0x88, 0x99, // stuffed 0xFF 0x00 + RST3
-        0xff, 0xd9, // EOI
-      ]),
+      buffer: jpeg,
     });
 
-    await expect(page.locator("#beforeCount")).toContainText("fields found");
+    await expect(page.locator("#beforeCount")).toContainText("3 fields found");
+    await expect(page.locator("#beforeTables")).toContainText("TESTCAM");
+    await expect(page.locator("#beforeTables")).toContainText("SECRET-COMMENT");
+    await expect(page.locator("#removeButton")).toBeEnabled();
 
     await page.click("#removeButton");
+
+    await expect(page.locator("#afterPanel")).toBeVisible();
     await expect(page.locator("#afterSummary")).toContainText("Verified clean");
 
     const downloadPromise = page.waitForEvent("download");
     await page.click("#downloadButton");
     await page.click("#dlConfirm");
     const download = await downloadPromise;
-    const outPath = require("node:path").join(require("node:os").tmpdir(), "truehide-meta-" + Date.now() + ".jpg");
+    const outPath = path.join(os.tmpdir(), "truehide-meta-" + Date.now() + ".jpg");
     await download.saveAs(outPath);
-    const out = require("node:fs").readFileSync(outPath);
-    require("node:fs").unlinkSync(outPath);
+    const out = fs.readFileSync(outPath);
+    fs.unlinkSync(outPath);
 
-    // Output must be a valid JPEG: SOI prefix, EOI suffix, EXIF dropped,
-    // JFIF kept, and scan data including stuffed bytes + restart markers preserved.
+    // Output is a valid JPEG: SOI/EOI intact, EXIF and comment dropped,
+    // JFIF kept, and the scan data (stuffed bytes + restart markers)
+    // preserved by the byte-level removal.
     expect(out[0]).toBe(0xff);
+    expect(out[1]).toBe(0xd8);
     expect(out[out.length - 2]).toBe(0xff);
     expect(out[out.length - 1]).toBe(0xd9);
     const t = out.toString("latin1");
     expect(t).not.toContain("Exif");
+    expect(t).not.toContain("TESTCAM");
+    expect(t).not.toContain("SECRET-COMMENT");
     expect(t).toContain("JFIF");
-    // Scan data with stuffed 0xFF 0x00 and restart markers (0xD0-0xD7) must survive.
-    const expectedScan = Buffer.from([0xff, 0x00, 0xff, 0xd0, 0x11, 0x22, 0x33, 0x44, 0x55, 0xff, 0x00, 0xff, 0xd3, 0x66, 0x77, 0x88, 0x99]);
-    expect(out.includes(expectedScan)).toBe(true);
+    expect(out.includes(scan)).toBe(true);
   });
 });

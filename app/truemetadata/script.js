@@ -943,9 +943,35 @@
         addField(fields, "Private JPEG metadata", "(present)", "other");
       }
 
-      if (marker === 0xda) break;
-
       i = end;
+
+      if (marker === 0xda) {
+        // Skip the entropy-coded scan data (0xFF 0x00 is byte stuffing,
+        // RST0-RST7 are restart markers) so that markers after a scan —
+        // including APP1 segments placed between scans of a progressive
+        // JPEG — are still read.
+        while (i < n) {
+          if (u8[i] !== 0xff) {
+            i++;
+            continue;
+          }
+
+          let next = i + 1;
+
+          while (next < n && u8[next] === 0xff) next++;
+
+          if (next >= n) break;
+
+          const code = u8[next];
+
+          if (code === 0x00 || (code >= 0xd0 && code <= 0xd7)) {
+            i = next + 1;
+            continue;
+          }
+
+          break;
+        }
+      }
     }
 
     return { fields, warnings };

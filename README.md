@@ -321,15 +321,15 @@ Note: `npm test` does not include `test:privacy`; run that separately.
 
 | Test Suite               | Result                 |
 | ------------------------ | ---------------------- |
-| Chromium E2E             | 50/50 passed           |
-| Firefox E2E              | 50/50 passed           |
+| Chromium E2E             | 52/52 passed           |
+| Firefox E2E              | 52/52 passed           |
 | Unit tests               | 1/1 passed             |
 | Asset integrity          | 11/11 passed           |
 | Privacy tests            | 3/3 passed per browser |
 | Offline tests            | 2/2 passed per browser |
 | Accessibility axe checks | 6/6 passed per browser |
 
-**98 successful E2E test executions across Chromium and Firefox.**
+**104 successful E2E test executions across Chromium and Firefox.**
 
 ### What is tested?
 
