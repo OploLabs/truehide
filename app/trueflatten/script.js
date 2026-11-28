@@ -514,7 +514,12 @@ function flattenPDF() {
         pageNumber++
       ) {
         const page = await pdfDocument.getPage(pageNumber);
-        const viewport = page.getViewport({ scale: 2 });
+        // Cap render scale so canvas dimensions stay within browser limits.
+        // Normal pages use 2×; large pages get a reduced scale to avoid blank exports.
+        const origViewport = page.getViewport({ scale: 1 });
+        const maxDim = Math.max(origViewport.width, origViewport.height);
+        const scale = Math.min(2, 16000 / maxDim);
+        const viewport = page.getViewport({ scale });
 
         const canvas = document.createElement("canvas");
         canvas.width = Math.ceil(viewport.width);

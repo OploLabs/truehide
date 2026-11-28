@@ -45,6 +45,8 @@ shared/
   base.js                              Theme toggle, island nav, toasts, file drop,
                                        shared footer injection, service worker registration
   dialog.js                            Shared modal/dialog primitives (focus trap, Escape)
+  download.js                          Shared download-confirmation dialog
+                                       (TrueHide.confirmDownload, TrueHide.formatBytes)
   shortcuts.js                         Keyboard-shortcut registry + shortcut-help dialog
   footer.html                          Canonical footer — the single source of truth;
                                        fetched & injected at runtime by base.js on every page

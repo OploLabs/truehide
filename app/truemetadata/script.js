@@ -1353,34 +1353,31 @@
     }
 
     const parts = [u8.subarray(0, 2)];
-
-    // Keep JFIF, ICC and Adobe color information.
-    // Remove EXIF, XMP, IPTC, private APP blocks and comments.
-    const shouldDrop = (marker) =>
-      marker === 0xe1 ||
-      marker === 0xfe ||
-      (marker >= 0xe3 && marker <= 0xed) ||
-      (marker >= 0xef && marker <= 0xf5);
-
     let i = 2;
-    let foundEnd = false;
+    let foundScan = false;
+
+    const shouldDrop = (marker) =>
+      marker === 0xe1 || // APP1 (EXIF/XMP)
+      marker === 0xfe || // COM
+      (marker >= 0xe3 && marker <= 0xed) || // APP3-APP13
+      (marker >= 0xef && marker <= 0xf5); // APP15-JPG13
 
     while (i < u8.length) {
-      if (u8[i] !== 0xff) return null;
-
-      const markerStart = i;
+      if (u8[i] !== 0xff) {
+        i++;
+        continue;
+      }
 
       while (i < u8.length && u8[i] === 0xff) {
         i++;
       }
 
-      if (i >= u8.length) return null;
+      if (i >= u8.length) break;
 
       const marker = u8[i];
 
-      if (marker === 0xd9) {
-        parts.push(u8.subarray(markerStart, i + 1));
-        foundEnd = true;
+      if (marker === 0xd9) { // EOI
+        parts.push(u8.subarray(i - 1, i + 1));
         break;
       }
 
@@ -1389,20 +1386,19 @@
         marker === 0x01 ||
         (marker >= 0xd0 && marker <= 0xd7)
       ) {
-        parts.push(u8.subarray(markerStart, i + 1));
         i++;
         continue;
       }
 
-      if (i + 2 >= u8.length) return null;
+      if (i + 2 >= u8.length) break;
 
       const len = (u8[i + 1] << 8) | u8[i + 2];
-
-      if (len < 2) return null;
+      if (len < 2) break;
 
       const end = i + 1 + len;
+      if (end > u8.length) break;
 
-      if (end > u8.length) return null;
+      const markerStart = i - 1;
 
       if (!shouldDrop(marker)) {
         parts.push(u8.subarray(markerStart, end));
@@ -1410,62 +1406,34 @@
 
       i = end;
 
-      if (marker === 0xda) {
-        // Scan data can contain multiple scans and markers.
-        // Preserve entropy data while continuing to inspect
-        // markers between scans.
-
+      if (marker === 0xda) { // SOS
+        foundScan = true;
+        // Collect entropy scan data until the next non-stuffed/non-RST 0xFF marker
+        const scanStart = i;
         while (i < u8.length) {
           if (u8[i] !== 0xff) {
             i++;
             continue;
           }
-
-          const scanMarkerStart = i;
-
-          let j = i + 1;
-
-          while (j < u8.length && u8[j] === 0xff) {
-            j++;
+          let next = i + 1;
+          while (next < u8.length && u8[next] === 0xff) {
+            next++;
           }
-
-          if (j >= u8.length) return null;
-
-          const code = u8[j];
-
-          // Stuffed bytes and restart markers belong to scan data.
+          if (next >= u8.length) break;
+          const code = u8[next];
+          // 0x00 is byte-stuffing, 0xD0-0xD7 are restart markers (RST0-RST7)
           if (code === 0x00 || (code >= 0xd0 && code <= 0xd7)) {
-            i = j + 1;
+            i = next + 1;
             continue;
           }
-
-          parts.push(
-            u8.subarray(
-              scanMarkerStart === i ? i : scanMarkerStart,
-              scanMarkerStart,
-            ),
-          );
-
-          // The marker is handled by the outer loop.
+          // Found a true marker (EOI, next SOS, APPn, DQT, etc.)
           break;
         }
-
-        if (i >= u8.length) return null;
-
-        // The scan data begins where the previous SOS ended.
-        // Find the marker that terminated this scan.
-        const scanStart = end;
-        const markerPosition = i;
-
-        if (markerPosition < scanStart) return null;
-
-        // The bytes between the SOS header and terminating
-        // marker have not yet been added.
-        // Reconstructing them is handled by the scan helper below.
+        parts.push(u8.subarray(scanStart, i));
       }
     }
 
-    if (!foundEnd) return null;
+    if (!foundScan) return null;
 
     const output = concatBytes(parts);
 

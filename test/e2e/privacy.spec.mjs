@@ -10,9 +10,9 @@ test.describe("TrueHide — privacy & network monitoring", () => {
     await page.goto('/');
   });
 
-  test("no external network requests on any page (offline-mode check)", async ({ page, request }) => {
-    // We'll navigate to each app page and assert zero unexpected external requests.
-    // All assets are vendored; the only known external is Google Fonts which we replaced.
+  test("no external network requests on any app page (offline-mode check)", async ({ page }) => {
+    // All four apps: every request — including the initial page load — must
+    // stay on the local test origin. All assets are vendored locally.
     const pages = [
       '/app/trueflatten/',
       '/app/trueblur/',
@@ -21,52 +21,37 @@ test.describe("TrueHide — privacy & network monitoring", () => {
     ];
 
     for (const rel of pages) {
-      await page.goto('http://127.0.0.1:4173' + rel);
-
-      // Collect all network requests during page load + idle.
-      const requests = [];
-      page.on('request', req => requests.push({ url: req.url(), method: req.method() }));
-      page.on('requestfailed', req => requests.push({ url: req.url(), method: req.method(), failed: true }));
-      page.on('requestfinished', req => requests.push({ url: req.url(), method: req.method(), finished: true }));
-
-      // Wait for network to go idle (no pending requests).
-      await page.waitForLoadState('networkidle');
-
-      // Filter out same-origin and known-internal requests.
-      const externalRequests = requests.filter(r => {
+      const external = [];
+      // Attach BEFORE navigation so initial page-load requests are captured.
+      // A single 'request' listener sees every request once; adding
+      // requestfailed/requestfinished on top would double-count them.
+      const handler = req => {
+        const url = req.url();
+        // In-memory object URLs / pseudo-protocols never leave the device.
+        if (/^(blob:|data:|file:|about:)/.test(url)) return;
         try {
-          const url = new URL(r.url);
-          // Same-origin (baseURL 127.0.0.1:4173) is OK.
-          if (url.hostname === '127.0.0.1' || url.hostname === 'localhost') return false;
-          // Reject anything not the known self-hosted font or same-origin.
-          return true;
+          const u = new URL(url);
+          // Only an http(s) connection to a non-local host is a violation.
+          if ((u.protocol === 'http:' || u.protocol === 'https:') &&
+              u.hostname !== '127.0.0.1' && u.hostname !== 'localhost') {
+            external.push(url);
+          }
         } catch {
-          return true;
+          // Unparseable URL: not an outbound network connection.
         }
-      });
+      };
 
-      // Allow the single expected self-hosted font (Inter woff2) and same-origin requests.
-      // All other external loads are privacy violations.
-      const unexpected = externalRequests.filter(r => {
-        const u = new URL(r.url);
-        // Block: any external host that isn't 127.0.0.1/localhost
-        if (u.hostname !== '127.0.0.1' && u.hostname !== 'localhost') return true;
-        // Block: anything with a path that looks like an external CDN or analytics
-        if (r.url.includes('google')) return true;
-        if (r.url.includes('analytics')) return true;
-        if (r.url.includes('track')) return true;
-        if (r.url.includes('doubleclick')) return true;
-        // Allow: known self-hosted font
-        if (r.url.endsWith('.woff2') || r.url.endsWith('.font')) return false;
-        // Block everything else external
-        return true;
-      });
-
-      console.log(`Page ${rel}: ${externalRequests.length} total external-like requests, ${unexpected.length} unexpected`);
-      if (unexpected.length > 0) {
-        console.log('  Unexpected requests:', unexpected.map(r => r.url).join(', '));
-        throw new Error(`Privacy violation on ${rel}: unexpected external network requests`);
+      page.on('request', handler);
+      try {
+        await page.goto(rel);
+        // Wait for the network to go idle (no pending requests).
+        await page.waitForLoadState('networkidle');
+      } finally {
+        page.off('request', handler);
       }
+
+      console.log(`Page ${rel}: ${external.length} external request(s)`);
+      expect(external, `unexpected external requests on ${rel}`).toEqual([]);
     }
 
     console.log('Privacy check passed: no unexpected external network requests on any page');
@@ -168,9 +153,12 @@ test.describe("TrueHide — privacy & network monitoring", () => {
         if (url.startsWith('blob:') || url.startsWith('data:')) return false;
         try {
           const u = new URL(url);
+          // Only flag real outbound http(s) connections to non-local hosts;
+          // pseudo-protocols (about:, view-source:) are not network traffic.
+          if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
           return !(u.hostname === '127.0.0.1' || u.hostname === 'localhost');
         } catch {
-          return true;
+          return false;
         }
       });
 

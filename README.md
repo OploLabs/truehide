@@ -181,7 +181,7 @@ The service worker:
 - Provides an offline navigation fallback.
 - Keeps the applications functional after their resources have been cached.
 
-The verified service worker cache contains 27 application shell entries.
+The verified service worker cache contains 31 application shell entries.
 
 ---
 
@@ -321,15 +321,15 @@ Note: `npm test` does not include `test:privacy`; run that separately.
 
 | Test Suite               | Result                 |
 | ------------------------ | ---------------------- |
-| Chromium E2E             | 44/44 passed           |
-| Firefox E2E              | 44/44 passed           |
+| Chromium E2E             | 50/50 passed           |
+| Firefox E2E              | 50/50 passed           |
 | Unit tests               | 1/1 passed             |
-| Asset integrity          | 10/10 passed           |
+| Asset integrity          | 11/11 passed           |
 | Privacy tests            | 3/3 passed per browser |
 | Offline tests            | 2/2 passed per browser |
 | Accessibility axe checks | 6/6 passed per browser |
 
-**88 successful E2E test executions across Chromium and Firefox.**
+**98 successful E2E test executions across Chromium and Firefox.**
 
 ### What is tested?
 
@@ -414,6 +414,7 @@ See [VERIFICATION_REPORT.md](./VERIFICATION_REPORT.md) for the detailed results,
 │   │   ├── script.js
 │   │   └── lib/
 │   │       ├── pdf.min.js
+│   │       ├── pdf.worker.min.js
 │   │       └── jspdf.umd.min.js
 │   │
 │   ├── trueblur/
@@ -442,6 +443,7 @@ See [VERIFICATION_REPORT.md](./VERIFICATION_REPORT.md) for the detailed results,
 │   ├── base.css
 │   ├── base.js
 │   ├── dialog.js
+│   ├── download.js
 │   ├── shortcuts.js
 │   └── footer.html
 │

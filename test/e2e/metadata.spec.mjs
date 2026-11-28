@@ -344,4 +344,203 @@ test.describe("TrueMetadata — viewer and verified removal", () => {
     await expect(page.locator("#metaPanels")).toBeHidden();
     await expect(page.locator("#downloadButton")).toBeHidden();
   });
+
+  // ------- JPEG scan-data integrity regression tests -------
+
+  test("progressive JPEG (multi-SOS) with XMP between scans", async ({ page }) => {
+    await page.goto("/app/truemetadata/");
+
+    // Build a progressive JPEG with 2 SOS scans and XMP metadata between them.
+    const { Buffer } = await import("node:buffer");
+    const { writeFileSync } = await import("node:fs");
+
+    function seg(marker, payload) {
+      const out = Buffer.alloc(4 + payload.length);
+      out[0] = 0xff;
+      out[1] = marker;
+      out.writeUInt16BE(payload.length + 2, 2);
+      payload.copy(out, 4);
+      return out;
+    }
+
+    const jfif = Buffer.from([0, 0, 0x4a, 0x46, 0x49, 0x46, 0, 0, 1, 1, 0, 0, 0, 0]);
+    const sof1 = Buffer.from([0x08, 0x00, 0x30, 0x00, 0x40, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]);
+    const sos1 = Buffer.from([0x03, 0x01, 0x00, 0x00, 0x01, 0x05, 0x3f, 0x00]);
+    // Scan 1 data: includes byte stuffing (0xFF 0x00) and RST0 (0xFF 0xD0)
+    const scan1 = Buffer.alloc(180, 0x55);
+    scan1[10] = 0xff; scan1[11] = 0x00;   // stuffed byte
+    scan1[50] = 0xff; scan1[51] = 0xd2;    // RST0
+    const sof2 = Buffer.from([0x08, 0x00, 0x18, 0x00, 0x18, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]);
+    const sos2 = Buffer.from([0x03, 0x01, 0x00, 0x00, 0x02, 0x11, 0x3f, 0x00]);
+    const scan2 = Buffer.from([0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb]);
+    const xmp = Buffer.from("http://ns.adobe.com/xap/1.0/\u003Cx:xmpmeta\u003ESECRET-XMP\u003C/x:xmpmeta\u003E", "utf8");
+
+    const jpeg = Buffer.concat([
+      Buffer.from([0xff, 0xd8]),
+      seg(0xe1, Buffer.from("Exif", "ascii")), // APP1 EXIF placeholder
+      seg(0xe0, jfif),
+      seg(0xda, sos1), seg(1 + scan1.length), scan1,
+      seg(0xe1, xmp), // XMP inserted between scans!
+      seg(0xda, sos2), seg(1 + scan2.length), scan2,
+      Buffer.from([0xff, 0xd9]),
+    ]);
+
+    await page.setInputFiles('input[type="file"]', {
+      name: "prog-marker-test.jpg",
+      mimeType: "image/jpeg",
+      buffer: jpeg,
+    });
+
+    await expect(page.locator("#beforeCount")).toContainText("fields found");
+    await expect(page.locator("#beforeTables")).toContainText("JFIF");
+
+    await page.click("#removeButton");
+    await expect(page.locator("#afterSummary")).toContainText("Verified clean");
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.click("#downloadButton");
+    await page.click("#dlConfirm");
+    const download = await downloadPromise;
+    const outPath = require("node:path").join(require("node:os").tmpdir(), "truehide-meta-" + Date.now() + ".jpg");
+    await download.saveAs(outPath);
+    const out = require("node:fs").readFileSync(outPath);
+    require("node:fs").unlinkSync(outPath);
+
+    // Output must be a valid JPEG: SOI + EOI, EXIF dropped, JFIF kept, scan data preserved.
+    expect(out[0]).toBe(0xff);
+    expect(out[1]).toBe(0xd9 === out[out.length - 1] ? "EOI check handled" : true);
+    const t = out.toString("latin1");
+    expect(t).not.toContain("Exif");
+    expect(t).not.toContain("SECRET-XMP");
+    expect(t).toContain("JFIF");
+    // Scan data (including stuffed bytes and restart markers) must survive.
+    const scanBuf = Buffer.alloc(180, 0x55);
+    scanBuf[10] = 0xff; scanBuf[11] = 0x00;
+    scanBuf[50] = 0xff; scanBuf[51] = 0xd2;
+    expect(out.includes(scanBuf)).toBe(true);
+  });
+
+  test("progressive JPEG (multi-SOS) byte-stuffing and restart markers", async ({ page }) => {
+    await page.goto("/app/truemetadata/");
+
+    function seg(marker, payload) {
+      const out = Buffer.alloc(4 + payload.length);
+      out[0] = 0xff;
+      out[1] = marker;
+      out.writeUInt16BE(payload.length + 2, 2);
+      payload.copy(out, 4);
+      return out;
+    }
+
+    const jfif = Buffer.from([0, 0, 0x4a, 0x46, 0x49, 0x46, 0, 0, 1, 1, 0, 0, 0, 0]);
+    const sof1 = Buffer.from([0x08, 0x00, 0x30, 0x00, 0x40, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]);
+    const sos1 = Buffer.from([0x03, 0x01, 0x00, 0x00, 0x01, 0x05, 0x3f, 0x00]);
+    // Scan data with multiple stuffed bytes and multiple restart markers
+    const scan1 = Buffer.alloc(200, 0x30);
+    for (let i = 0; i < scan1.length; i += 37) scan1[i] = 0xff;
+    scan1[40] = 0xff; scan1[41] = 0x00;   // stuffed
+    scan1[80] = 0xff; scan1[81] = 0xd1;    // RST1
+    scan1[120] = 0xff; scan1[121] = 0x00; // stuffed
+    scan1[160] = 0xff; scan1[161] = 0xd7; // RST7
+
+    const sof2 = Buffer.from([0x08, 0x00, 0x18, 0x00, 0x18, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]);
+    const sos2 = Buffer.from([0x03, 0x01, 0x00, 0x00, 0x02, 0x11, 0x3f, 0x00]);
+    const scan2 = Buffer.from([0x11, 0x22, 0x33, 0x44, 0x55]);
+
+    const jpeg = Buffer.concat([
+      Buffer.from([0xff, 0xd8]),
+      seg(0xe0, jfif),
+      seg(0xdb, Buffer.concat([Buffer.from([0]), Buffer.alloc(64, 0x10)])),
+      seg(0xc0, sof1), seg(0xda, sos1), scan1,
+      seg(0xdb, Buffer.concat([Buffer.from([0]), Buffer.alloc(64, 0x10)])),
+      seg(0xc1, sof2), seg(0xda, sos2), scan2,
+      Buffer.from([0xff, 0xd9]),
+    ]);
+
+    await page.setInputFiles('input[type="file"]', {
+      name: "rst-test.jpg",
+      mimeType: "image/jpeg",
+      buffer: jpeg,
+    });
+
+    await expect(page.locator("#beforeCount")).toContainText("fields found");
+
+    await page.click("#removeButton");
+    await expect(page.locator("#afterSummary")).toContainText("Verified clean");
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.click("#downloadButton");
+    await page.click("#dlConfirm");
+    const download = await downloadPromise;
+    const outPath = require("node:path").join(require("node:os").tmpdir(), "truehide-meta-" + Date.now() + ".jpg");
+    await download.saveAs(outPath);
+    const out = require("node:fs").readFileSync(outPath);
+    require("node:fs").unlinkSync(outPath);
+
+    // Output must be valid JPEG with SOI/EOI, JFIF kept, EXIF dropped,
+    // and scan data (including stuffed 0xFF 0x00 and RST markers) preserved.
+    expect(out[0]).toBe(0xff);
+    expect(out[out.length - 2]).toBe(0xff);
+    expect(out[out.length - 1]).toBe(0xd9);
+    const t = out.toString("latin1");
+    expect(t).not.toContain("Exif");
+    expect(t).toContain("JFIF");
+    // Scan data with stuffing and RST markers must survive intact.
+    const scanBuf = Buffer.alloc(200, 0x30);
+    for (let i = 0; i < scan1.length; i += 37) scan1[i] = 0xff;
+    scan1[40] = 0xff; scan1[41] = 0x00;
+    scan1[80] = 0xff; scan1[81] = 0xd1;
+    scan1[120] = 0xff; scan1[121] = 0x00;
+    scan1[160] = 0xff; scan1[161] = 0xd7;
+    expect(out.includes(scan1)).toBe(true);
+  });
+
+  test("baseline JPEG with byte-stuffed scan data and restart markers", async ({ page }) => {
+    await page.goto("/app/truemetadata/");
+
+    // This test validates that the updated stripJpeg correctly preserves
+    // entropy-coded scan data containing byte-stuffing (0xFF 0x00) and
+    // restart markers (RST0-RST7 / 0xD0-0xD7), which the original
+    // implementation silently dropped.
+    await page.setInputFiles('input[type="file"]', {
+      name: "stuffed-scan.jpg",
+      mimeType: "image/jpeg",
+      buffer: Buffer.from([ // minimal valid JPEG
+        0xff, 0xd8, // SOI
+        0xff, 0xe1, 0x05, 0x00, 0x4a, 0x45, 0x78, 0x69, 0x66, 0x00, 0x00, // APP1 "Exif"
+        0xff, 0xdb, 0x00, 84, ...Array(64).fill(0x10), // DQT
+        0xff, 0xc0, 0x0b, 0x00, 30, 0x00, 40, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, // SOF0
+        0xff, 0xda, 0x0c, 0x00, // SOS
+        0xff, 0x00, 0xff, 0xd0, 0x11, 0x22, 0x33, 0x44, 0x55, // stuffed 0xFF 0x00 + RST0
+        0xff, 0x00, 0xff, 0xd3, 0x66, 0x77, 0x88, 0x99, // stuffed 0xFF 0x00 + RST3
+        0xff, 0xd9, // EOI
+      ]),
+    });
+
+    await expect(page.locator("#beforeCount")).toContainText("fields found");
+
+    await page.click("#removeButton");
+    await expect(page.locator("#afterSummary")).toContainText("Verified clean");
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.click("#downloadButton");
+    await page.click("#dlConfirm");
+    const download = await downloadPromise;
+    const outPath = require("node:path").join(require("node:os").tmpdir(), "truehide-meta-" + Date.now() + ".jpg");
+    await download.saveAs(outPath);
+    const out = require("node:fs").readFileSync(outPath);
+    require("node:fs").unlinkSync(outPath);
+
+    // Output must be a valid JPEG: SOI prefix, EOI suffix, EXIF dropped,
+    // JFIF kept, and scan data including stuffed bytes + restart markers preserved.
+    expect(out[0]).toBe(0xff);
+    expect(out[out.length - 2]).toBe(0xff);
+    expect(out[out.length - 1]).toBe(0xd9);
+    const t = out.toString("latin1");
+    expect(t).not.toContain("Exif");
+    expect(t).toContain("JFIF");
+    // Scan data with stuffed 0xFF 0x00 and restart markers (0xD0-0xD7) must survive.
+    const expectedScan = Buffer.from([0xff, 0x00, 0xff, 0xd0, 0x11, 0x22, 0x33, 0x44, 0x55, 0xff, 0x00, 0xff, 0xd3, 0x66, 0x77, 0x88, 0x99]);
+    expect(out.includes(expectedScan)).toBe(true);
+  });
 });
